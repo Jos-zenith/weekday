@@ -1,0 +1,68 @@
+{
+ "note": "Mechanics test. Candidate behaviour drawn from ASSUMED rates; the booking share is not evidence.",
+ "dashboard": {
+  "Unique requests (the denominator for every share)": 500.0,
+  "Duplicate rows removed": 20.0,
+  "People": 426.0,
+  "Scheduled within 24h": 209.0,
+  "booked by an intern": 67.0,
+  "booked by the candidate": 142.0,
+  "Open now": 0.0,
+  "At risk (open, deadline within the urgent window)": 0.0,
+  "Tries made": 178.0,
+  "Requests booked per try (measured)": 0.37640449438202245,
+  "Intern minutes per interview booked": 11.955223880597014,
+  "Open": 0.0,
+  "Missed deadline: never tried": 214.0,
+  "Missed deadline: tried, not booked": 63.0,
+  "No reply after max tries": 0.0,
+  "Bad contact details": 11.0,
+  "Stopped / wrong number": 3.0,
+  "Not interested": 0.0,
+  "Partner has no slots": 0.0,
+  "Scheduled late": 0.0,
+  "Scheduled within 24h (share)": 0.418
+ },
+ "capacity_and_cost": {
+  "Intern minutes before the deadline (Ram + Shyam)": 950.9999999951104,
+  "Tries the interns can make": 211.0,
+  "Requests booked per try (measured after 30 tries, else planning value)": 0.37640449438202245,
+  "Share candidates book themselves (planning value)": 0.25,
+  "Requests needed for the target": 400.0,
+  "of which interns must book": 275.0,
+  "Tries needed": 731.0,
+  "Most tries that can be useful (people x max tries)": 1278.0,
+  "Interns needed (same shifts as today)": 7.0,
+  "Verdict": "Needs about 7 interns on today's shifts.",
+  "Cost: is extra capacity worth paying for?": null,
+  "Cost of one intern-day (Rs)": 909.0909090909091,
+  "Cost per try (Rs)": 8.616975441619992,
+  "Cost per interview booked by an intern (Rs)": 22.892860128482965,
+  "Expected value of one scheduled interview to Weekday (Rs)": 8100.0,
+  "Value / cost": 353.822106741573,
+  "Gap to target today (requests)": 191.0,
+  "Revenue at risk from the gap, per day (Rs)": 386775.0,
+  "Extra interns to close the gap, cost per day (Rs)": 4545.454545454546,
+  "Automated evening WhatsApp to everyone, 2 messages, cost per day (Rs)": 732.72
+ },
+ "log": {
+  "lines": 331,
+  "intern_lines": 182,
+  "bot_tries": 178,
+  "sheet_tries": 178,
+  "intern_lines_per_try": 1.022,
+  "conversations_needing_more_than_one_line": 4,
+  "check_column": {
+   "OK": 331
+  },
+  "max_tries_per_person": 3,
+  "tries_outside_10_to_21": 0
+ },
+ "list_codes_shown": {
+  "T1": 142,
+  "T2": 56,
+  "T3": 9,
+  "CHK": 3
+ },
+ "formula_errors_after_day": 0
+}
