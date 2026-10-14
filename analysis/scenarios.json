@@ -1,0 +1,250 @@
+{
+ "inputs": {
+  "P": 426,
+  "R": 500,
+  "valid": 0.97,
+  "min_per_intern": 475,
+  "min_per_try": 4.5,
+  "target": 0.8,
+  "intern_day": 909
+ },
+ "scenarios": [
+  {
+   "s": 0.15,
+   "b1": 0.35,
+   "d": 1.0,
+   "two_interns": 0.323,
+   "four": 0.497,
+   "six": 0.67,
+   "ceiling": 0.748,
+   "interns_for_80": null
+  },
+  {
+   "s": 0.15,
+   "b1": 0.35,
+   "d": 0.7,
+   "two_interns": 0.323,
+   "four": 0.479,
+   "six": 0.592,
+   "ceiling": 0.639,
+   "interns_for_80": null
+  },
+  {
+   "s": 0.15,
+   "b1": 0.35,
+   "d": 0.4,
+   "two_interns": 0.323,
+   "four": 0.462,
+   "six": 0.521,
+   "ceiling": 0.539,
+   "interns_for_80": null
+  },
+  {
+   "s": 0.15,
+   "b1": 0.45,
+   "d": 1.0,
+   "two_interns": 0.373,
+   "four": 0.596,
+   "six": 0.819,
+   "ceiling": 0.837,
+   "interns_for_80": 6
+  },
+  {
+   "s": 0.15,
+   "b1": 0.45,
+   "d": 0.7,
+   "two_interns": 0.373,
+   "four": 0.574,
+   "six": 0.71,
+   "ceiling": 0.732,
+   "interns_for_80": null
+  },
+  {
+   "s": 0.15,
+   "b1": 0.45,
+   "d": 0.4,
+   "two_interns": 0.373,
+   "four": 0.551,
+   "six": 0.618,
+   "ceiling": 0.629,
+   "interns_for_80": null
+  },
+  {
+   "s": 0.25,
+   "b1": 0.35,
+   "d": 1.0,
+   "two_interns": 0.423,
+   "four": 0.597,
+   "six": 0.77,
+   "ceiling": 0.778,
+   "interns_for_80": null
+  },
+  {
+   "s": 0.25,
+   "b1": 0.35,
+   "d": 0.7,
+   "two_interns": 0.423,
+   "four": 0.569,
+   "six": 0.67,
+   "ceiling": 0.682,
+   "interns_for_80": null
+  },
+  {
+   "s": 0.25,
+   "b1": 0.35,
+   "d": 0.4,
+   "two_interns": 0.423,
+   "four": 0.542,
+   "six": 0.587,
+   "ceiling": 0.594,
+   "interns_for_80": null
+  },
+  {
+   "s": 0.25,
+   "b1": 0.45,
+   "d": 1.0,
+   "two_interns": 0.473,
+   "four": 0.696,
+   "six": 0.856,
+   "ceiling": 0.856,
+   "interns_for_80": 5
+  },
+  {
+   "s": 0.25,
+   "b1": 0.45,
+   "d": 0.7,
+   "two_interns": 0.473,
+   "four": 0.66,
+   "six": 0.764,
+   "ceiling": 0.764,
+   "interns_for_80": null
+  },
+  {
+   "s": 0.25,
+   "b1": 0.45,
+   "d": 0.4,
+   "two_interns": 0.473,
+   "four": 0.625,
+   "six": 0.673,
+   "ceiling": 0.673,
+   "interns_for_80": null
+  },
+  {
+   "s": 0.4,
+   "b1": 0.35,
+   "d": 1.0,
+   "two_interns": 0.573,
+   "four": 0.747,
+   "six": 0.822,
+   "ceiling": 0.822,
+   "interns_for_80": 5
+  },
+  {
+   "s": 0.4,
+   "b1": 0.35,
+   "d": 0.7,
+   "two_interns": 0.573,
+   "four": 0.702,
+   "six": 0.745,
+   "ceiling": 0.745,
+   "interns_for_80": null
+  },
+  {
+   "s": 0.4,
+   "b1": 0.35,
+   "d": 0.4,
+   "two_interns": 0.573,
+   "four": 0.658,
+   "six": 0.675,
+   "ceiling": 0.675,
+   "interns_for_80": null
+  },
+  {
+   "s": 0.4,
+   "b1": 0.45,
+   "d": 1.0,
+   "two_interns": 0.623,
+   "four": 0.846,
+   "six": 0.885,
+   "ceiling": 0.885,
+   "interns_for_80": 4
+  },
+  {
+   "s": 0.4,
+   "b1": 0.45,
+   "d": 0.7,
+   "two_interns": 0.623,
+   "four": 0.782,
+   "six": 0.811,
+   "ceiling": 0.811,
+   "interns_for_80": 5
+  },
+  {
+   "s": 0.4,
+   "b1": 0.45,
+   "d": 0.4,
+   "two_interns": 0.623,
+   "four": 0.726,
+   "six": 0.738,
+   "ceiling": 0.738,
+   "interns_for_80": null
+  }
+ ],
+ "cost_per_try": 8.61,
+ "finance": [
+  {
+   "hire": 0.01,
+   "ctc": 1200000,
+   "value": 1800,
+   "breakeven_booking_per_try": 0.0041
+  },
+  {
+   "hire": 0.01,
+   "ctc": 1800000,
+   "value": 2700,
+   "breakeven_booking_per_try": 0.0027
+  },
+  {
+   "hire": 0.01,
+   "ctc": 2400000,
+   "value": 3600,
+   "breakeven_booking_per_try": 0.002
+  },
+  {
+   "hire": 0.03,
+   "ctc": 1200000,
+   "value": 5400,
+   "breakeven_booking_per_try": 0.0014
+  },
+  {
+   "hire": 0.03,
+   "ctc": 1800000,
+   "value": 8100,
+   "breakeven_booking_per_try": 0.0009
+  },
+  {
+   "hire": 0.03,
+   "ctc": 2400000,
+   "value": 10800,
+   "breakeven_booking_per_try": 0.0007
+  },
+  {
+   "hire": 0.05,
+   "ctc": 1200000,
+   "value": 9000,
+   "breakeven_booking_per_try": 0.0008
+  },
+  {
+   "hire": 0.05,
+   "ctc": 1800000,
+   "value": 13500,
+   "breakeven_booking_per_try": 0.0005
+  },
+  {
+   "hire": 0.05,
+   "ctc": 2400000,
+   "value": 18000,
+   "breakeven_booking_per_try": 0.0004
+  }
+ ]
+}

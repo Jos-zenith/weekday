@@ -7,6 +7,7 @@ drawn from the analysis model's ASSUMED rates. So this tests the sheet's mechani
 evidence about real candidates and must not be quoted as one.
 
 Usage: python tests/dry_run.py [workbook]   (default: Weekday_Scheduling_Desk.xlsx; writes tests/output/)
+       EVENING_MSG=0 python tests/dry_run.py   runs the day without the evening WhatsApp pilot
 """
 import collections
 import datetime as dt
@@ -26,7 +27,8 @@ from excel import open_excel, sheet_errors  # noqa: E402
 
 SRC = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "Weekday_Scheduling_Desk.xlsx"))
 OUTD = os.path.join(HERE, "output")
-DST = os.path.join(OUTD, "dry_run_day1.xlsx")
+TAG = "" if os.environ.get("EVENING_MSG", "1") == "1" else "_no_message"
+DST = os.path.join(OUTD, f"dry_run_day1{TAG}.xlsx")
 shutil.copyfile(SRC, DST)
 
 truth = json.load(open(os.path.join(OUTD, "truth.json")))
@@ -37,6 +39,10 @@ self_min = {(r["phone"], r["company"], r["round"]): r["self_min"] for r in truth
 ANS = np.array(sim2.BASE["ans_p"])
 CONV, EXTRA, OPT = sim2.BASE["conv_p"], sim2.BASE["extra_conv"], sim2.BASE["opt_p"]
 P_LINK, LINK_DELAY = 0.6, (15, 180)        # ASSUMED: share who book after we send a link, and how long they take
+# Evening WhatsApp pilot (MESSAGES tab). Reply rates are INVENTED for the mechanics test, by candidate class:
+EVENING = os.environ.get("EVENING_MSG", "1") == "1"
+REPLY_YES = [0.35, 0.15, 0.03]             # replies YES (template A) or books from the link (template B)
+REPLY_STOP = 0.01
 rng = np.random.default_rng(424242)
 
 START = DAY0 + dt.timedelta(days=1, hours=10)
@@ -57,6 +63,39 @@ booked = set()                    # (phone, company, round) booked so far
 pending_link = []                 # (time, phone, company, round): candidate books from a link we sent
 stats = collections.Counter()
 codes_seen = collections.Counter()
+yes_phones, stop_phones = set(), set()
+yes_first_position = {}           # list position where a YES replier first appeared
+
+
+def evening_message():
+    """Lead confirms opt-in, exports the send list, and pastes the provider's report back (day 0, ~20:00-22:00)."""
+    settings.Range("B22").Value = "YES"
+    xl.CalculateFull()
+    report = []
+    for row in S("MESSAGES").Range(f"A9:G{8 + 600}").Value:
+        if row[1] in (None, ""):
+            continue
+        ph, template, company = str(row[1])[-10:], row[2], str(row[4]).split(" and ")[0]
+        stats["sent"] += 1
+        stats[f"template_{template}"] += 1
+        stats["template_matches_consent"] += (template == "A") == (consent[company] == "YES")
+        stats["template_B_has_link"] += template == "B" and str(row[5]).startswith("https://")
+        u, reply = rng.random(), ""
+        if u < REPLY_STOP:
+            reply = "STOP"
+            stop_phones.add(ph)
+        elif u < REPLY_STOP + REPLY_YES[cls[ph]]:
+            if template == "A":
+                reply = "Yes please"
+                yes_phones.add(ph)
+            else:
+                for (p2, comp, rd) in self_min:
+                    if p2 == ph and comp == company:
+                        pending_link.append((DAY0 + dt.timedelta(hours=20, minutes=float(rng.uniform(5, 120))), ph, comp, rd))
+        # alternate phone formats to test that the sheet matches "+91 ..." and plain numbers alike
+        report.append(("+91 " + ph if len(report) % 2 else ph, "DELIVERED", reply, ""))
+    if report:
+        S("MESSAGES").Range(f"I9:L{8 + len(report)}").Value = tuple(report)
 
 
 def recalc(clock):
@@ -75,6 +114,8 @@ def write_log(lines):
 
 
 try:
+    if EVENING:
+        evening_message()
     clock = START
     recalc(clock)
     while True:
@@ -98,12 +139,17 @@ try:
                 continue
             t_local = to_abs(clock)
             budget_end = min(t_local + CYCLE, to_abs(DAY0 + dt.timedelta(days=1, minutes=hi)))
-            for row in S(sheet).Range("A7:P31").Value:
+            for pos, row in enumerate(S(sheet).Range("A7:P31").Value, start=1):
                 phone = row[2]
                 if phone in (None, ""):
                     continue
                 phone, code = str(phone), row[15]
                 codes_seen[code] += 1
+                replied_yes = str(row[6]).startswith("REPLIED YES")
+                stats["stop_repliers_listed"] += phone in stop_phones
+                stats["yes_label_without_yes_reply"] += replied_yes and phone not in yes_phones
+                if phone in yes_phones:
+                    yes_first_position.setdefault(phone, pos)
                 items = []
                 for x in str(row[3]).split("; "):
                     comp, rd = x.rsplit(" ", 1)
@@ -111,7 +157,7 @@ try:
                         items.append((comp, rd))
                 if not items:
                     continue
-                cost = float(rng.uniform(3, 6)) + 1.5 * (len(items) - 1)
+                cost = (2.0 if replied_yes else float(rng.uniform(3, 6))) + 1.5 * (len(items) - 1)
                 if t_local + cost > budget_end:
                     break
                 t_local += cost
@@ -119,8 +165,8 @@ try:
                 stats["tries"] += 1
                 stats["rows_with_last_try_label"] += str(row[6]).startswith("LAST TRY")
                 n_before = len(lines)
-                answered = rng.random() < min(1.0, ANS[cls[phone]] * sim2.tod_factor(t_local))
-                if answered and rng.random() < CONV:
+                answered = replied_yes or rng.random() < min(1.0, ANS[cls[phone]] * sim2.tod_factor(t_local))
+                if replied_yes or (answered and rng.random() < CONV):
                     keep = [it for j, it in enumerate(items) if j == 0 or rng.random() < EXTRA]
                     drop = [it for it in items if it not in keep]
                     link_items = [it for it in keep if consent[it[0]] != "YES"]
@@ -161,7 +207,22 @@ try:
     out = {"note": "Mechanics test. Candidate behaviour drawn from ASSUMED rates; the booking share is not evidence."}
     out["dashboard"] = {str(d.Cells(r, 1).Value).strip(): d.Cells(r, 2).Value for r in list(range(6, 17)) + list(range(19, 28))}
     out["dashboard"]["Scheduled within 24h (share)"] = d.Range("B3").Value
-    out["capacity_and_cost"] = {str(d.Cells(r, 1).Value).strip(): d.Cells(r, 2).Value for r in range(30, 51) if d.Cells(r, 1).Value}
+    out["readout_used_planning_measured_n"] = {str(d.Cells(r, 1).Value): [d.Cells(r, c).Value for c in (2, 3, 4, 5)]
+                                               for r in range(31, 36)}
+    out["capacity_and_cost"] = {str(d.Cells(r, 1).Value).strip(): d.Cells(r, 2).Value
+                                for r in list(range(38, 41)) + list(range(45, 51)) + list(range(53, 64)) if d.Cells(r, 1).Value}
+    m = S("MESSAGES")
+    out["evening_message"] = {
+        "enabled": EVENING, "sent": stats["sent"], "template_A": stats["template_A"], "template_B": stats["template_B"],
+        "template_matches_partner_consent": stats["template_matches_consent"],
+        "template_B_rows_with_link": stats["template_B_has_link"],
+        "replied_yes": len(yes_phones), "replied_stop": len(stop_phones),
+        "stop_repliers_ever_listed": stats["stop_repliers_listed"],
+        "yes_label_shown_without_yes_reply": stats["yes_label_without_yes_reply"],
+        "yes_repliers_first_list_position": sorted(yes_first_position.values()),
+        "pilot_readout": [[m.Cells(r, c).Value for c in range(1, 9)] for r in (6, 7)],
+        "note": "Reply rates are invented; this checks that replies flow into the lists, not how many will reply.",
+    }
     logv = lg.Range(lg.Cells(2, 1), lg.Cells(max(2, next_row - 1), 10)).Value2     # Value2: dates as serial numbers
     checks = collections.Counter(str(r[9]) for r in logv if r[3])
     per_person = collections.Counter(str(r[2]) for r in logv if r[7] == 1)
@@ -181,5 +242,5 @@ try:
 finally:
     wb.Close(False)
     xl.Quit()
-json.dump(out, open(os.path.join(OUTD, "dry_run_result.json"), "w"), indent=1, default=str)
+json.dump(out, open(os.path.join(OUTD, f"dry_run_result{TAG}.json"), "w"), indent=1, default=str)
 print(json.dumps(out, indent=1, default=str))

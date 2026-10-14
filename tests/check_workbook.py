@@ -23,7 +23,7 @@ PATH = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else
 # Functions Google Sheets supports (subset relevant here; checked against the Sheets function list).
 SHEETS_OK = {"IF", "IFERROR", "AND", "OR", "NOT", "INDEX", "MATCH", "VLOOKUP", "COUNTIF", "COUNTIFS", "SUMIFS", "SUM",
              "SUMPRODUCT", "MAXIFS", "MINIFS", "MAX", "MIN", "ROUND", "ROUNDUP", "ROUNDDOWN", "MOD", "INT", "VALUE",
-             "RIGHT", "LEFT", "LEN", "FIND", "SEARCH", "TRIM", "LOWER", "SUBSTITUTE", "TEXT", "NOW", "ISNUMBER",
+             "RIGHT", "LEFT", "MID", "LEN", "FIND", "SEARCH", "TRIM", "LOWER", "SUBSTITUTE", "TEXT", "NOW", "ISNUMBER",
              "HYPERLINK", "ENCODEURL"}
 BANNED = ["held", "hold", "release", "pencil", "reserved"]
 

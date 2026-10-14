@@ -1,88 +1,180 @@
-10:30  in-24h=18.2%  tries=5
-11:00  in-24h=19.8%  tries=10
-11:30  in-24h=21.2%  tries=14
-12:00  in-24h=23.2%  tries=19
-12:30  in-24h=25.0%  tries=27
-13:00  in-24h=25.8%  tries=37
-13:30  in-24h=28.2%  tries=50
-14:00  in-24h=30.0%  tries=62
-14:30  in-24h=31.6%  tries=75
-15:00  in-24h=32.4%  tries=86
-15:30  in-24h=33.2%  tries=96
-16:00  in-24h=34.0%  tries=109
-16:30  in-24h=35.4%  tries=121
-17:00  in-24h=36.2%  tries=134
-17:30  in-24h=37.8%  tries=145
-18:00  in-24h=39.0%  tries=157
-18:30  in-24h=39.8%  tries=163
-19:00  in-24h=40.2%  tries=169
-19:30  in-24h=41.0%  tries=174
-19:51  in-24h=41.2%  tries=178
+10:30  in-24h=24.0%  tries=14
+11:00  in-24h=26.8%  tries=22
+11:30  in-24h=28.8%  tries=27
+12:00  in-24h=30.8%  tries=32
+12:30  in-24h=31.8%  tries=40
+13:00  in-24h=32.8%  tries=49
+13:30  in-24h=34.2%  tries=61
+14:00  in-24h=36.0%  tries=74
+14:30  in-24h=37.2%  tries=86
+15:00  in-24h=37.8%  tries=97
+15:30  in-24h=39.0%  tries=106
+16:00  in-24h=40.4%  tries=118
+16:30  in-24h=41.6%  tries=130
+17:00  in-24h=42.0%  tries=142
+17:30  in-24h=43.6%  tries=151
+18:00  in-24h=44.8%  tries=161
+18:30  in-24h=46.2%  tries=167
+19:00  in-24h=46.4%  tries=173
+19:30  in-24h=47.2%  tries=177
+19:51  in-24h=47.6%  tries=182
 {
  "note": "Mechanics test. Candidate behaviour drawn from ASSUMED rates; the booking share is not evidence.",
  "dashboard": {
   "Unique requests (the denominator for every share)": 500.0,
   "Duplicate rows removed": 20.0,
   "People": 426.0,
-  "Scheduled within 24h": 209.0,
-  "booked by an intern": 67.0,
-  "booked by the candidate": 142.0,
+  "Scheduled within 24h": 239.0,
+  "booked by an intern": 84.0,
+  "booked by the candidate": 155.0,
   "Open now": 0.0,
   "At risk (open, deadline within the urgent window)": 0.0,
-  "Tries made": 178.0,
-  "Requests booked per try (measured)": 0.37640449438202245,
-  "Intern minutes per interview booked": 11.955223880597014,
+  "Tries made": 182.0,
+  "Requests booked per try (measured)": 0.46153846153846156,
+  "Intern minutes per interview booked": 9.75,
   "Open": 0.0,
-  "Missed deadline: never tried": 214.0,
-  "Missed deadline: tried, not booked": 63.0,
+  "Missed deadline: never tried": 184.0,
+  "Missed deadline: tried, not booked": 54.0,
   "No reply after max tries": 0.0,
   "Bad contact details": 11.0,
-  "Stopped / wrong number": 3.0,
-  "Not interested": 0.0,
+  "Stopped / wrong number": 7.0,
+  "Not interested": 5.0,
   "Partner has no slots": 0.0,
   "Scheduled late": 0.0,
-  "Scheduled within 24h (share)": 0.418
+  "Scheduled within 24h (share)": 0.478
+ },
+ "readout_used_planning_measured_n": {
+  "Minutes per try": [
+   5.2502841466339305,
+   4.5,
+   5.2502841466339305,
+   182.0
+  ],
+  "Try 1: share where the person said yes": [
+   0.5081967213114754,
+   0.45,
+   0.5081967213114754,
+   122.0
+  ],
+  "Try 2: share where the person said yes": [
+   0.42857142857142855,
+   0.315,
+   0.42857142857142855,
+   49.0
+  ],
+  "Try 3: share where the person said yes": [
+   0.22049999999999997,
+   0.22049999999999997,
+   0.45454545454545453,
+   11.0
+  ],
+  "Share of requests candidates booked themselves": [
+   0.31,
+   0.25,
+   0.31,
+   500.0
+  ]
  },
  "capacity_and_cost": {
   "Intern minutes before the deadline (Ram + Shyam)": 950.9999999951104,
-  "Tries the interns can make": 211.0,
-  "Requests booked per try (measured after 30 tries, else planning value)": 0.37640449438202245,
-  "Share candidates book themselves (planning value)": 0.25,
-  "Requests needed for the target": 400.0,
-  "of which interns must book": 275.0,
-  "Tries needed": 731.0,
-  "Most tries that can be useful (people x max tries)": 1278.0,
-  "Interns needed (same shifts as today)": 7.0,
-  "Verdict": "Needs about 7 interns on today's shifts.",
-  "Cost: is extra capacity worth paying for?": null,
+  "Tries today's staff can make": 181.0,
+  "People to reach by phone (not self-booked, contacts usable)": 287.47332,
+  "Expected share with today's staff": 0.5259239590548757,
+  "Best case with unlimited interns (3 tries each)": 0.8369917498829039,
+  "People interns must book to hit the target": 208.74,
+  "Tries needed": 438.1753421510618,
+  "Interns needed (same shift length as today)": 5.0,
+  "Verdict": "Reachable with about 5 interns on today's shifts (best case 84%)",
   "Cost of one intern-day (Rs)": 909.0909090909091,
-  "Cost per try (Rs)": 8.616975441619992,
-  "Cost per interview booked by an intern (Rs)": 22.892860128482965,
+  "Cost per try (Rs)": 10.045203415369162,
   "Expected value of one scheduled interview to Weekday (Rs)": 8100.0,
-  "Value / cost": 353.822106741573,
-  "Gap to target today (requests)": 191.0,
-  "Revenue at risk from the gap, per day (Rs)": 386775.0,
-  "Extra interns to close the gap, cost per day (Rs)": 4545.454545454546,
-  "Automated evening WhatsApp to everyone, 2 messages, cost per day (Rs)": 732.72
+  "Cost per interview from a first try (Rs)": 16.840945545276323,
+  "Cost per interview from a third try (Rs): what the last extra intern buys": 38.814119319249556,
+  "Extra tries still pay if at least 1 in N books. N =": 946.0,
+  "Hire rate at which third tries stop paying": 0.00014375599747870206,
+  "Gap to target today (requests)": 161.0,
+  "Revenue at risk from the gap, per day (Rs)": 326025.0,
+  "Extra interns needed, cost per day (Rs)": 2727.2727272727275,
+  "Evening WhatsApp to everyone, 2 messages, cost per day (Rs)": "Rs 102 - 733"
+ },
+ "evening_message": {
+  "enabled": true,
+  "sent": 209,
+  "template_A": 106,
+  "template_B": 103,
+  "template_matches_partner_consent": 209,
+  "template_B_rows_with_link": 103,
+  "replied_yes": 24,
+  "replied_stop": 6,
+  "stop_repliers_ever_listed": 0,
+  "yes_label_shown_without_yes_reply": 0,
+  "yes_repliers_first_list_position": [
+   1,
+   2,
+   2,
+   3,
+   3,
+   4,
+   4,
+   5,
+   5,
+   6,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18
+  ],
+  "pilot_readout": [
+   [
+    "SEND",
+    246.0,
+    128.0,
+    0.5203252032520326,
+    209.0,
+    0.0,
+    24.0,
+    6.0
+   ],
+   [
+    "HOLD",
+    254.0,
+    111.0,
+    0.43700787401574803,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  "note": "Reply rates are invented; this checks that replies flow into the lists, not how many will reply."
  },
  "log": {
-  "lines": 331,
-  "intern_lines": 182,
-  "bot_tries": 178,
-  "sheet_tries": 178,
-  "intern_lines_per_try": 1.022,
-  "conversations_needing_more_than_one_line": 4,
+  "lines": 356,
+  "intern_lines": 195,
+  "bot_tries": 182,
+  "sheet_tries": 182,
+  "intern_lines_per_try": 1.071,
+  "conversations_needing_more_than_one_line": 10,
   "check_column": {
-   "OK": 331
+   "OK": 356
   },
   "max_tries_per_person": 3,
   "tries_outside_10_to_21": 0
  },
  "list_codes_shown": {
-  "T1": 142,
-  "T2": 56,
-  "T3": 9,
-  "CHK": 3
+  "T1": 152,
+  "T2": 51,
+  "CHK": 5,
+  "T3": 12
  },
  "formula_errors_after_day": 0
 }
