@@ -24,16 +24,32 @@ PATH = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else
 SHEETS_OK = {"IF", "IFERROR", "AND", "OR", "NOT", "INDEX", "MATCH", "VLOOKUP", "COUNTIF", "COUNTIFS", "SUMIFS", "SUM",
              "SUMPRODUCT", "MAXIFS", "MINIFS", "MAX", "MIN", "ROUND", "ROUNDUP", "ROUNDDOWN", "MOD", "INT", "VALUE",
              "RIGHT", "LEFT", "MID", "LEN", "FIND", "SEARCH", "TRIM", "LOWER", "SUBSTITUTE", "TEXT", "NOW", "ISNUMBER",
-             "HYPERLINK", "ENCODEURL"}
+             "HYPERLINK", "ENCODEURL", "ROW"}
 BANNED = ["held", "hold", "release", "pencil", "reserved"]
 
+def paren_balance(f):
+    """Net open brackets outside string literals (Excel refuses to open a file with an unbalanced formula)."""
+    depth, in_str = 0, False
+    for ch in f:
+        if ch == '"':
+            in_str = not in_str
+        elif not in_str:
+            depth += (ch == "(") - (ch == ")")
+    return depth
+
+
 wb = openpyxl.load_workbook(PATH)
-funcs, problems = set(), []
+funcs, problems, unbalanced = set(), [], []
 for ws in wb.worksheets:
     for row in ws.iter_rows():
         for c in row:
             if isinstance(c.value, str) and c.value.startswith("="):
                 funcs |= set(re.findall(r"(?:_xlfn\.)?([A-Z][A-Z0-9\.]*)\(", c.value))
+                if paren_balance(c.value) and len(unbalanced) < 5:
+                    unbalanced.append(f"{ws.title}!{c.coordinate}")
+print("formulas with unbalanced brackets:", unbalanced or "none")
+if unbalanced:
+    sys.exit(1)
     for rng, rules in ws.conditional_formatting._cf_rules.items():
         for rule in rules:
             for f in rule.formula or []:

@@ -113,6 +113,11 @@ for i in rng.choice(n, size=int(round(0.04 * n)), replace=False):      # partner
     rows.append(d)
 rows = [rows[int(k)] for k in rng.permutation(len(rows))]
 assert len(rows) <= NROWS
+for k, r in enumerate(rows, start=1):
+    r["id"] = f"R{k:03d}"                       # same value INPUT column K generates for this row
+for r in rows:                                  # a re-sent copy keeps its own ID; the earliest copy's ID is the one used
+    if "dup_of" in r:
+        r["canonical"] = next(o["id"] for o in rows if o["i"] == r["dup_of"] and "dup_of" not in o)
 
 comps = sorted({r["company"] for r in rows})
 consent = {cn: ("YES" if rng.random() < 0.7 else "NO") for cn in comps}     # demo: 70% of partners allow booking for them
@@ -120,7 +125,7 @@ consent = {cn: ("YES" if rng.random() < 0.7 else "NO") for cn in comps}     # de
 os.makedirs(os.path.dirname(TRUTH), exist_ok=True)
 json.dump(dict(
     cand={cand_phone[c]: dict(cls=int(world["cls"][c]), valid=bool(world["valid"][c])) for c in range(nc)},
-    req=[dict(phone=r["phone"], company=r["company"], round=r["round"],
+    req=[dict(id=r["id"], phone=r["phone"], company=r["company"], round=r["round"],
               self_min=(None if not np.isfinite(world["self_time"][r["i"]]) else float(world["self_time"][r["i"]])))
          for r in rows if "dup_of" not in r],
     consent=consent, day0=DAY0.isoformat(), arrival_min=int(cfg["arrive_clock"]),
@@ -168,11 +173,12 @@ settings = [
     ("ubst", 15, "Urgent priority boost", 2, "0.0", ""),
     ("rbst", 16, "Round 2 / Round 3 priority boost", 1.3, "0.0", "Later rounds are warmer and block the partner's pipeline."),
     ("target", 17, "Target: share scheduled within the deadline", 0.8, "0%", "The brief's 80%."),
-    ("b1", 18, "Planning value: share of first tries where the person says yes", 0.45, "0%",
-     "ASSUMPTION. DASHBOARD switches to the measured rate after 20 first tries."),
+    ("b1", 18, "Planning value: share of first tries that end in a confirmed booking", 0.40, "0%",
+     "ASSUMPTION. Confirmed = booked by us, or booked by the candidate after our link. A link sent is not a booking. "
+     "DASHBOARD switches to the measured rate after 20 first tries."),
     ("decay", 19, "Planning value: how much of that later tries keep (try 2 = x, try 3 = x squared)", 0.7, "0.00",
      "ASSUMPTION, and the number that decides whether more interns can reach 80%. Measured by try number on DASHBOARD."),
-    ("pself", 20, "Planning value: share of requests candidates book themselves", 0.25, "0%",
+    ("pself", 20, "Planning value: share of requests candidates book on their own (no intern try)", 0.25, "0%",
      "ASSUMPTION. DASHBOARD switches to the measured share once the deadline has passed."),
     ("rboost", 21, "Priority boost when someone replied YES on WhatsApp", 5, "0", "Puts them at the top of the list."),
     ("optin", 22, "Candidates' WhatsApp opt-in confirmed for provider messages? (YES / NO)", "NO", "@",
@@ -227,13 +233,14 @@ header(ws, 1, ["Outcome", "When to use it", "Counts as a try (1/0)", "Wait befor
 outcomes = [
     ("NO_ANSWER", "Called, no answer. You sent the WhatsApp.", 1, 120, "Person"),
     ("CALL_BACK", "They picked up but asked you to call later.", 1, 120, "Person"),
-    ("BOOKED", "You booked the interview for them in the partner's calendar.", 1, 0, "Company in E, or blank = all"),
-    ("SENT_LINK", "They said yes; you sent the partner's booking link (partner does not let us book).", 1, 180, "Person"),
-    ("NOT_INTERESTED", "They no longer want this interview.", 1, 0, "Company in E, or blank = all"),
+    ("BOOKED", "You booked the interview for them in the partner's calendar.", 1, 0, "Request ID in E, or blank = all"),
+    ("SENT_LINK", "They said yes; you sent the partner's booking link. NOT a booking: it counts only once they book.", 1, 180,
+     "Person"),
+    ("NOT_INTERESTED", "They no longer want this interview.", 1, 0, "Request ID in E, or blank = all"),
     ("STOP", "They asked us to stop contacting them.", 1, 0, "Person"),
     ("WRONG_NUMBER", "Wrong number, or not their WhatsApp.", 1, 0, "Person"),
-    ("SELF_BOOKED", "Their booking is already in the partner's calendar (they did it).", 0, 0, "Company in E, or blank = all"),
-    ("NO_SLOTS", "The partner's calendar has no free time. Write the company in E.", 0, 0, "Company"),
+    ("SELF_BOOKED", "Their booking is already in the partner's calendar (they did it).", 0, 0, "Request ID in E, or blank = all"),
+    ("NO_SLOTS", "The partner's calendar has no free time. Write that request's ID in E.", 0, 0, "Request ID (pauses the partner)"),
 ]
 for i, row in enumerate(outcomes, start=2):
     for j, v in enumerate(row, start=1):
@@ -261,8 +268,8 @@ PARTR = "LISTS!$A$14:$B$19"
 # ---------------------------------------------------------------------------------- INPUT (lead)
 ws = S["INPUT"]
 header(ws, 1, ["Company", "Interviewer", "Interviewer Email", "Candidate", "Candidate Email", "Candidate Phone",
-               "Scheduling method", "Round", "Added On", "Signal (optional: Clicked / Opened / None)"],
-       widths=[14, 14, 32, 14, 32, 14, 38, 9, 16, 16])
+               "Scheduling method", "Round", "Added On", "Signal (optional: Clicked / Opened / None)", "Request ID"],
+       widths=[14, 14, 32, 14, 32, 14, 38, 9, 16, 16, 11])
 for k, r in enumerate(rows, start=2):
     vals = [r["company"], r["intv_name"], r["intv"], r["cand"], r["email"], r["phone"], r["method"], r["round"],
             r["added"], r["signal"]]
@@ -270,8 +277,12 @@ for k, r in enumerate(rows, start=2):
         ws.cell(k, j, v).font = f_input
     ws.cell(k, 6).number_format = "@"
     ws.cell(k, 9).number_format = "yyyy-mm-dd hh:mm"
+for k in range(2, NROWS + 2):
+    ws.cell(k, 11, f'=IF(A{k}="","","R"&TEXT(ROW()-1,"000"))').font = f_norm
 ws["L1"] = ("PASTE the partner sheet into columns A-I from row 2 (same 9 columns as the sheet Weekday sends). "
-            "Column J is optional. Demo rows below are SYNTHETIC (example.com addresses, fake numbers).")
+            "Column J is optional. Column K is the request ID that follows the request into the lists, LOG and DASHBOARD: "
+            "keep the formula, or paste the partner's own unique ID over it. Never sort or delete rows once interns have "
+            "started logging (add new rows at the bottom), or the IDs move. Demo rows are SYNTHETIC (example.com, fake numbers).")
 ws["L1"].font, ws["L1"].alignment = f_bold, wrap
 ws.column_dimensions["L"].width = 60
 dv = DataValidation(type="list", formula1='"Clicked,Opened,None"', allow_blank=True)
@@ -296,7 +307,7 @@ for k, cname in enumerate(comps, start=2):
     ws.cell(k, 6, f'=COUNTIFS(DESK!$B$2:$B${R},A{k},DESK!$L$2:$L${R},1)').font = f_norm
     ws.cell(k, 7, f'=COUNTIFS(DESK!$B$2:$B${R},A{k},DESK!$AO$2:$AO${R},1)').font = f_norm
     ws.cell(k, 8, f'=IF(F{k}=0,"",G{k}/F{k})').number_format = "0%"
-    ws.cell(k, 9, f'=COUNTIFS(LOG!$E$2:$E${LOGN+1},A{k},LOG!$D$2:$D${LOGN+1},"NO_SLOTS")').font = f_norm
+    ws.cell(k, 9, f'=COUNTIFS(LOG!$K$2:$K${LOGN+1},A{k},LOG!$D$2:$D${LOGN+1},"NO_SLOTS")').font = f_norm
 NPART = len(comps)
 ws.cell(NPART + 3, 1, ("Column C: put YES only when the partner has agreed in writing that we may book interviews in their calendar "
                        "for the candidate. Blank or NO = we send their link instead. Column D: if an intern logs NO_SLOTS the "
@@ -316,10 +327,12 @@ PCOL = lambda c: f"PARTNERS!${c}$2:${c}${NPART + 1}"
 
 # ---------------------------------------------------------------------------------- LOG (interns)
 ws = S["LOG"]
-header(ws, 1, ["Time (Ctrl+Shift+;)", "Who", "Phone (copy from your list)", "Outcome", "Company (blank = all of theirs)",
-               "Notes", "time used (auto)", "try? (auto)", "try key (auto)", "Check (auto)"],
-       widths=[18, 10, 16, 18, 22, 40, 16, 8, 16, 34])
+header(ws, 1, ["Time (Ctrl+Shift+;)", "Who", "Phone (copy from your list)", "Outcome",
+               "Request ID (blank = all their open requests)", "Notes", "time used (auto)", "try? (auto)", "try key (auto)",
+               "Check (auto)", "company (auto)", "conversation no. (auto)", "try ended in a confirmed booking? (auto)"],
+       widths=[18, 10, 16, 18, 18, 36, 16, 8, 16, 34, 12, 10, 12])
 L = lambda c: f"LOG!${c}$2:${c}${LOGN + 1}"
+DID, DPH, DUQ, DCO = (f"DESK!${c}$2:${c}${R}" for c in ("AW", "F", "L", "B"))
 for r in range(2, LOGN + 2):
     ws.cell(r, 1).number_format = "yyyy-mm-dd hh:mm"
     ws.cell(r, 3).number_format = "@"
@@ -339,11 +352,20 @@ for r in range(2, LOGN + 2):
     ws.cell(r, 7, g).number_format = "yyyy-mm-dd hh:mm"
     ws.cell(r, 8, h)
     ws.cell(r, 9, f'=IF(H{r}=1,C{r}&"|"&COUNTIFS($C$2:C{r},C{r},$H$2:H{r},1),"")')
-    ws.cell(r, 10, (f'=IF(D{r}="","",IF(A{r}="","Missing time",IF(D{r}="NO_SLOTS",'
-                    f'IF(COUNTIF({PA},E{r})=0,"Write the company in column E","OK"),'
-                    f'IF(C{r}="","Missing phone",IF(COUNTIF(DESK!$F$2:$F${R},C{r})=0,"Phone not found: copy it from your list",'
-                    f'IF(AND(E{r}<>"",COUNTIFS(DESK!$F$2:$F${R},C{r},DESK!$B$2:$B${R},E{r})=0),"Company is not one of theirs","OK"))))))'))
-    for c in range(7, 11):
+    ws.cell(r, 10, (f'=IF(D{r}="","",IF(A{r}="","Missing time",IF(AND(D{r}="NO_SLOTS",E{r}=""),'
+                    f'"Write the request ID in column E",IF(C{r}="","Missing phone",'
+                    f'IF(COUNTIF({DPH},C{r})=0,"Phone not found: copy it from your list",IF(E{r}="","OK",'
+                    f'IF(COUNTIFS({DPH},C{r},{DID},E{r})=0,"Request ID is not one of theirs: copy it from column D",'
+                    f'IF(COUNTIFS({DPH},C{r},{DID},E{r},{DUQ},1)=0,"That ID is a removed duplicate: use the ID on your list",'
+                    f'"OK"))))))))'))
+    ws.cell(r, 11, f'=IF(E{r}="","",IFERROR(INDEX({DCO},MATCH(E{r},{DID},0)),""))')
+    ws.cell(r, 12, f'=IF(OR(D{r}="",C{r}=""),"",COUNTIFS($C$2:C{r},C{r},$H$2:H{r},1))')
+    # a try is a success only if its conversation produced a booking: BOOKED by us, or a SELF_BOOKED that was actually
+    # logged after we sent the link. A link on its own is never a success.
+    ws.cell(r, 13, (f'=IF(H{r}<>1,"",IF(COUNTIFS({L("C")},C{r},{L("L")},L{r},{L("D")},"BOOKED")>0,1,'
+                    f'IF(AND(COUNTIFS({L("C")},C{r},{L("L")},L{r},{L("D")},"SENT_LINK")>0,'
+                    f'COUNTIFS({L("C")},C{r},{L("D")},"SELF_BOOKED",{L("G")},">"&G{r})>0),1,0)))'))
+    for c in range(7, 14):
         ws.cell(r, c).font = f_note
 ws.conditional_formatting.add(f"J2:J{LOGN + 1}", FormulaRule(formula=['AND($J2<>"",$J2<>"OK")'], fill=fill_warn))
 dv = DataValidation(type="list", formula1=f"=LISTS!$A$2:$A${NOUT + 1}", allow_blank=True)
@@ -352,11 +374,9 @@ dv.add(f"D2:D{LOGN + 1}")
 dv2 = DataValidation(type="list", formula1='"Ram,Shyam,Lead"', allow_blank=True)
 ws.add_data_validation(dv2)
 dv2.add(f"B2:B{LOGN + 1}")
-dv3 = DataValidation(type="list", formula1=f"={PA}", allow_blank=True)
-ws.add_data_validation(dv3)
-dv3.add(f"E2:E{LOGN + 1}")
 ws.freeze_panes = "A2"
 LT, LP, LO, LC, LTRY, LKEY = L("G"), L("C"), L("D"), L("E"), L("H"), L("I")
+LCOMP, LOK = L("K"), L("M")
 
 # ---------------------------------------------------------------------------------- DESK (hidden engine)
 ws = S["DESK"]
@@ -370,7 +390,8 @@ cols = [
     ("AG", "Score"), ("AH", "Rank"), ("AI", "Queue key"), ("AJ", "Seq key"), ("AK", "Person first row?"),
     ("AL", "State"), ("AM", "Booked at"), ("AN", "Hours to schedule"), ("AO", "Scheduled in 24h?"),
     ("AP", "Booked by us?"), ("AQ", "First name"), ("AR", "Person no. (send list)"), ("AS", "WhatsApp status"),
-    ("AT", "WhatsApp reply"), ("AU", "Replied YES?"), ("AV", "Evening-message pilot group"),
+    ("AT", "WhatsApp reply"), ("AU", "Replied YES?"), ("AV", "Evening-message pilot group"), ("AW", "Request ID"),
+    ("AX", "Booked by candidate after our link?"), ("AY", "Request ID problem?"),
 ]
 header(ws, 1, [t for _, t in cols])
 for col, _ in cols:
@@ -399,14 +420,18 @@ for r in range(2, R + 1):
                f'+SUMPRODUCT(($J$2:J{r}=J{r})*($H$2:H{r}=H{r}))-1>0,"DUPLICATE",'
                f'IF(AND(ISNUMBER(SEARCH("@",E{r})),ISNUMBER(SEARCH(".",E{r})),LEN(F{r})=10,ISNUMBER(VALUE(F{r}))),"OK","BAD CONTACT")))')
     w_["L"] = f'=IF(B{r}="",0,IF(K{r}="DUPLICATE",0,1))'
-    hit = lambda code: f'COUNTIFS({LP},F{r},{LC},B{r},{LO},"{code}")+COUNTIFS({LP},F{r},{LC},"",{LO},"{code}")'
-    w_["M"] = f'=IF(L{r}=1,IF({hit("*BOOKED")}>0,1,0),0)'
-    w_["N"] = f'=IF(L{r}=1,IF({hit("NOT_INTERESTED")}>0,1,0),0)'
+    # Every LOG line names one request (column E) or, if E is blank, all of the person's requests.
+    # A line naming this request's ID always wins over a blank line.
+    ex = lambda code: f'COUNTIFS({LP},F{r},{LC},AW{r},{LO},"{code}")'
+    bl = lambda code: f'COUNTIFS({LP},F{r},{LC},"",{LO},"{code}")'
+    w_["M"] = (f'=IF(L{r}=1,IF({ex("*BOOKED")}>0,1,IF({ex("NOT_INTERESTED")}>0,0,'
+               f'IF({bl("*BOOKED")}>0,1,0))),0)')
+    w_["N"] = f'=IF(AND(L{r}=1,M{r}=0),IF({ex("NOT_INTERESTED")}+{bl("NOT_INTERESTED")}>0,1,0),0)'
     w_["O"] = (f'=IF(L{r}=1,IF(COUNTIFS({LP},F{r},{LO},"STOP")+COUNTIFS({LP},F{r},{LO},"WRONG_NUMBER")>0,1,'
                f'IF(ISNUMBER(SEARCH("STOP",AT{r})),1,0)),0)')
     pst = f'IFERROR(INDEX({PCOL("D")},MATCH(B{r},{PA},0)),"")'
     w_["P"] = (f'=IF(L{r}=1,IF({pst}="NO SLOTS",1,IF(AND({pst}<>"REOPENED",'
-               f'COUNTIFS({LC},B{r},{LO},"NO_SLOTS")>0),1,0)),0)')
+               f'COUNTIFS({LCOMP},B{r},{LO},"NO_SLOTS")>0),1,0)),0)')
     w_["Q"] = f'=IF(L{r}=1,COUNTIFS({LP},F{r},{LTRY},1),0)'
     w_["R"] = f'=IF(Q{r}>0,_xlfn.MAXIFS({LT},{LP},F{r},{LTRY},1),0)'
     w_["S"] = f'=IF(Q{r}>0,IFERROR(INDEX({LO},MATCH(F{r}&"|"&Q{r},{LKEY},0)),""),"")'
@@ -432,11 +457,10 @@ for r in range(2, R + 1):
     w_["AJ"] = f'=IF(X{r}=1,F{r}&"|"&AB{r},"")'
     w_["AK"] = f'=IF(L{r}=1,IF(COUNTIFS($F$2:F{r},F{r},$L$2:L{r},1)=1,1,0),0)'
     first = lambda c: f'_xlfn.MINIFS({LT},{LP},F{r},{LC},{c},{LO},"*BOOKED")'
-    w_["AM"] = (f'=IF(M{r}=1,IF({first(f"B{r}")}=0,{first(chr(34)*2)},IF({first(chr(34)*2)}=0,{first(f"B{r}")},'
-                f'MIN({first(f"B{r}")},{first(chr(34)*2)}))),"")')
+    w_["AM"] = f'=IF(M{r}=1,IF({ex("*BOOKED")}>0,{first(f"AW{r}")},{first(chr(34) * 2)}),"")'
     w_["AN"] = f'=IF(M{r}=1,(AM{r}-H{r})*24,"")'
     w_["AO"] = f'=IF(AND(M{r}=1,AN{r}<>""),IF(AN{r}<={SET["sla"]},1,0),0)'
-    w_["AP"] = f'=IF(M{r}=1,IF({hit("BOOKED")}>0,1,0),0)'
+    w_["AP"] = (f'=IF(M{r}=1,IF({ex("*BOOKED")}>0,IF({ex("BOOKED")}>0,1,0),IF({bl("BOOKED")}>0,1,0)),0)')
     w_["AQ"] = f'=IF(B{r}="","",LEFT(D{r},FIND(" ",D{r}&" ")-1))'
     # provider report (MESSAGES): last 10 digits of the phone, so "+91 90000 00007" and "9000000007" both match
     w_["AR"] = f'=IF(AND(AK{r}=1,K{r}="OK"),COUNTIFS($AK$2:AK{r},1,$K$2:K{r},"OK"),"")'
@@ -444,11 +468,16 @@ for r in range(2, R + 1):
     w_["AT"] = f'=IF(L{r}=1,IFERROR(INDEX({MR},MATCH(F{r},{MP},0))&"",""),"")'
     w_["AU"] = f'=IF(AND(X{r}=1,ISNUMBER(SEARCH("YES",AT{r}))),1,0)'
     w_["AV"] = f'=IF(L{r}=1,IF(MOD(IFERROR(VALUE(MID(F{r},9,1)),0),2)=0,"SEND","HOLD"),"")'
+    w_["AW"] = f'=IF(B{r}="","",TRIM(INPUT!K{r}&""))'
+    w_["AX"] = f'=IF(AND(M{r}=1,AP{r}=0),IF(COUNTIFS({LP},F{r},{LO},"SENT_LINK",{LT},"<"&AM{r})>0,1,0),0)'
+    w_["AY"] = f'=IF(B{r}="","",IF(AW{r}="","Missing ID",IF(COUNTIF({D_("AW")},AW{r})>1,"ID used twice","")))'
     w_["AL"] = (f'=IF(B{r}="","",IF(K{r}="DUPLICATE","Duplicate (removed)",IF(AO{r}=1,"Scheduled within 24h",'
                 f'IF(M{r}=1,"Scheduled late",IF(K{r}="BAD CONTACT","Bad contact details",'
                 f'IF(O{r}=1,"Stopped / wrong number",IF(N{r}=1,"Not interested",IF(P{r}=1,"Partner has no slots",'
-                f'IF({CK}>=V{r},IF(Q{r}=0,"Missed deadline: never tried","Missed deadline: tried, not booked"),'
-                f'IF(Q{r}>={SET["maxtry"]},"No reply after max tries","Open"))))))))))')
+                f'IF({CK}>=V{r},IF(Q{r}=0,"Missed deadline: never tried",IF(COUNTIFS({LP},F{r},{LO},"SENT_LINK")>0,'
+                f'"Missed deadline: link sent, never booked","Missed deadline: tried, not booked")),'
+                f'IF(Q{r}>={SET["maxtry"]},"No reply after max tries",IF(S{r}="SENT_LINK","Open: link sent, not booked yet",'
+                f'"Open")))))))))))')
     for col, fml in w_.items():
         c = ws[f"{col}{r}"]
         c.value = fml
@@ -494,10 +523,10 @@ def build_list(sheet, who):
     ws["D4"].font, ws["D4"].fill, ws["D4"].border = f_input, fill_in, box
     ws["D4"].number_format = "@"
     lk = lambda k: f'IFERROR(MATCH($D$4&"|{k}",DESK!$AJ$2:$AJ${R},0),"")'
+    lkr = lambda k: (f'INDEX(DESK!$AW$2:$AW${R},{lk(k)})&" "&INDEX(DESK!$B$2:$B${R},{lk(k)})&" "'
+                     f'&INDEX(DESK!$G$2:$G${R},{lk(k)})')
     ws["E4"] = (f'=IF($D$4="","",IF({lk(1)}="","Not on the open list (already done, or wrong number).",'
-                f'INDEX(DESK!$B$2:$B${R},{lk(1)})&" "&INDEX(DESK!$G$2:$G${R},{lk(1)})'
-                f'&IF({lk(2)}="","","; "&INDEX(DESK!$B$2:$B${R},{lk(2)})&" "&INDEX(DESK!$G$2:$G${R},{lk(2)}))'
-                f'&IF({lk(3)}="","","; "&INDEX(DESK!$B$2:$B${R},{lk(3)})&" "&INDEX(DESK!$G$2:$G${R},{lk(3)}))'
+                f'{lkr(1)}&IF({lk(2)}="","","; "&{lkr(2)})&IF({lk(3)}="","","; "&{lkr(3)})'
                 f'&IF(INDEX(DESK!$AC$2:$AC${R},{lk(1)})="YES"," : they said yes? Book it, log BOOKED."," : send the link, log SENT_LINK.")))')
     ws["E4"].font = f_bold
     ws.merge_cells("E4:I4")
@@ -505,10 +534,10 @@ def build_list(sheet, who):
         ws[f"{col}4"] = (f'=IF({lk(j)}="","",HYPERLINK(INDEX(DESK!$AD$2:$AD${R},{lk(j)}),'
                          f'"Calendar: "&INDEX(DESK!$B$2:$B${R},{lk(j)})))')
         ws[f"{col}4"].font = f_link
-    header(ws, 6, ["#", "Candidate", "Phone", "Interviews to book", "Hours left", "Try", "WHAT TO DO",
+    header(ws, 6, ["#", "Candidate", "Phone", "Interviews to book (request ID first)", "Hours left", "Try", "WHAT TO DO",
                    "Call", "WhatsApp", "Calendar 1", "Calendar 2", "Calendar 3", "Message (copy if WhatsApp opens empty)",
                    "key", "row", "msg"],
-           widths=[4, 16, 13, 30, 7, 5, 58, 15, 16, 14, 14, 14, 70, 4, 4, 4])
+           widths=[4, 16, 13, 34, 7, 5, 58, 15, 16, 14, 14, 14, 70, 4, 4, 4])
     for k in range(1, NQ + 1):
         r = 6 + k
         ws[f"A{r}"] = k
@@ -519,9 +548,10 @@ def build_list(sheet, who):
         m3 = f'MATCH($C{r}&"|3",DESK!$AJ$2:$AJ${R},0)'
         ws[f"B{r}"] = f'=IF(O{r}="","",{ix("D")})'
         ws[f"C{r}"] = f'=IF(O{r}="","",{ix("F")})'
-        ws[f"D{r}"] = (f'=IF(O{r}="","",{ix("B")}&" "&{ix("G")}'
-                       f'&IFERROR("; "&INDEX(DESK!$B$2:$B${R},{m2})&" "&INDEX(DESK!$G$2:$G${R},{m2}),"")'
-                       f'&IFERROR("; "&INDEX(DESK!$B$2:$B${R},{m3})&" "&INDEX(DESK!$G$2:$G${R},{m3}),""))')
+        req = lambda m: (f'INDEX(DESK!$AW$2:$AW${R},{m})&" "&INDEX(DESK!$B$2:$B${R},{m})&" "'
+                         f'&INDEX(DESK!$G$2:$G${R},{m})')
+        ws[f"D{r}"] = (f'=IF(O{r}="","",{ix("AW")}&" "&{ix("B")}&" "&{ix("G")}'
+                       f'&IFERROR("; "&{req(m2)},"")&IFERROR("; "&{req(m3)},""))')
         ws[f"E{r}"] = f'=IF(O{r}="","",ROUND({ix("W")},1))'
         ws[f"F{r}"] = f'=IF(O{r}="","",{ix("Q")}+1)'
         last = f'({ix("S")}="SENT_LINK")'
@@ -568,12 +598,20 @@ build_list("RAM", "Ram")
 build_list("SHYAM", "Shyam")
 
 # ---------------------------------------------------------------------------------- DASHBOARD (lead)
+# Every block says what kind of number it holds: LIVE (counted from LOG), PLANNING (an assumption in SETTINGS),
+# MODEL (arithmetic on those numbers) or COST (assumptions). A sent link is never counted as a booking.
 ws = S["DASHBOARD"]
 ws["A1"], ws["A1"].font = "DASHBOARD (lead). Everything updates live.", f_title
-ws.column_dimensions["A"].width = 62
-ws.column_dimensions["B"].width = 16
-ws.column_dimensions["C"].width = 70
+ws["A2"] = ("Kinds of number: LIVE = counted from LOG.  PLANNING = an assumption in SETTINGS.  MODEL = arithmetic on the "
+            "numbers above it, an upper bound rather than a forecast.  COST = assumptions.  A link sent is never a booking.")
+ws["A2"].font, ws["A2"].alignment = f_note, wrap
+ws.merge_cells("A2:F2")
+ws.row_dimensions[2].height = 26
+for c_, w_ in (("A", 62), ("B", 16), ("C", 14), ("D", 14), ("E", 12), ("F", 60)):
+    ws.column_dimensions[c_].width = w_
 DK = lambda c: f"DESK!${c}$2:${c}${R}"
+LB = L("B")
+TARGET = SET["target"]
 
 
 def kv(row, label, formula, fmt=None, note=None, bold=False):
@@ -587,60 +625,62 @@ def kv(row, label, formula, fmt=None, note=None, bold=False):
         ws.cell(row, 6).alignment = wrap
 
 
-ws["A3"] = "Scheduled within 24h (share of all unique requests)"
+ws["A3"] = "LIVE  Scheduled within 24h (share of all unique requests)"
 ws["A3"].font = Font(name=F, size=12, bold=True)
-ws["B3"] = f'=IF(B6=0,0,SUM({DK("AO")})/B6)'
+ws["B3"] = f'=IF(B6=0,0,B10/B6)'
 ws["B3"].font, ws["B3"].number_format = f_big, "0%"
-ws["C3"] = f'="Target "&TEXT({SET["target"]},"0%")&IF(B3>={SET["target"]},":  ON TARGET",":  below target")'
+ws["C3"] = f'="Target "&TEXT({TARGET},"0%")&IF(B3>={TARGET},":  ON TARGET",":  below target")'
 ws["C3"].font = Font(name=F, size=12, bold=True)
 ws.row_dimensions[3].height = 30
-section(ws, 5, "Today", 3)
+
+section(ws, 5, "LIVE  Today's requests (counted from LOG)", 6)
 kv(6, "Unique requests (the denominator for every share)", f"=SUM({DK('L')})")
 kv(7, "Duplicate rows removed", f'=COUNTIF({DK("K")},"DUPLICATE")')
 kv(8, "People", f"=SUM({DK('AK')})")
-kv(9, "Scheduled within 24h", f"=SUM({DK('AO')})")
-kv(10, "   booked by an intern", f"=SUMPRODUCT({DK('AO')},{DK('AP')})")
-kv(11, "   booked by the candidate", "=B9-B10")
-kv(12, "Open now", f'=COUNTIF({DK("AL")},"Open")')
-kv(13, "At risk (open, deadline within the urgent window)", f'=COUNTIFS({DK("X")},1,{DK("W")},"<="&{SET["urgent"]})')
-kv(14, "Tries made", f"=SUM({LTRY})")
-kv(15, "Requests booked per try (measured)", '=IF(B14=0,"-",B10/B14)', "0.00")
-kv(16, "Intern minutes per interview booked", f'=IF(B10=0,"-",B14*{SET["mintry"]}/B10)', "0.0")
-section(ws, 18, "Why requests are not scheduled", 3)
-states = ["Open", "Missed deadline: never tried", "Missed deadline: tried, not booked", "No reply after max tries",
-          "Bad contact details", "Stopped / wrong number", "Not interested", "Partner has no slots", "Scheduled late"]
+kv(9, "Request ID problems (missing, or used twice)", f'=COUNTIF({DK("AY")},"?*")', None, "Must be 0. See INPUT column K.")
+kv(10, "Scheduled within 24h", f"=SUM({DK('AO')})", None, "A request counts only when a BOOKED or SELF_BOOKED line names it.")
+kv(11, "   booked by an intern (BOOKED)", f"=SUMPRODUCT({DK('AO')},{DK('AP')})")
+kv(12, "   booked by the candidate after we sent a link", f"=SUMPRODUCT({DK('AO')},{DK('AX')})")
+kv(13, "   booked by the candidate on their own", "=B10-B11-B12")
+kv(14, "Open now", f'=COUNTIF({DK("AL")},"Open*")')
+kv(15, "   of which: link sent, not booked yet", f'=COUNTIF({DK("AL")},"Open: link sent*")', None,
+   "These are NOT bookings. They come back to the intern's list for a check.")
+kv(16, "At risk (open, deadline within the urgent window)", f'=COUNTIFS({DK("X")},1,{DK("W")},"<="&{SET["urgent"]})')
+kv(17, "Tries made", f"=SUM({LTRY})")
+kv(18, "Links sent (SENT_LINK lines; not bookings)", f'=COUNTIF({LO},"SENT_LINK")')
+kv(19, "Requests booked by interns per try", '=IF(B17=0,"-",B11/B17)', "0.00")
+kv(20, "Intern minutes per interview booked by an intern", '=IF(B11=0,"-",B17*B37/B11)', "0.0")
+
+section(ws, 22, "LIVE  Why requests are not scheduled", 6)
+states = ["Open", "Open: link sent, not booked yet", "Missed deadline: never tried", "Missed deadline: tried, not booked",
+          "Missed deadline: link sent, never booked", "No reply after max tries", "Bad contact details",
+          "Stopped / wrong number", "Not interested", "Partner has no slots", "Scheduled late"]
 for k, s_ in enumerate(states):
-    kv(19 + k, s_, f'=COUNTIF({DK("AL")},"{s_}")')
-    ws.cell(19 + k, 3, f'=IF($B$6=0,"",B{19 + k}/$B$6)').number_format = "0%"
-    ws.cell(19 + k, 3).font = f_norm
-    ws.cell(19 + k, 3).alignment = Alignment(horizontal="left")
+    r = 23 + k
+    kv(r, s_, f'=COUNTIF({DK("AL")},"{s_}")')
+    ws.cell(r, 3, f'=IF($B$6=0,"",B{r}/$B$6)').number_format = "0%"
+    ws.cell(r, 3).font = f_norm
 
-ws.column_dimensions["C"].width = 14
-for c_, w_ in (("D", 14), ("E", 12), ("F", 60)):
-    ws.column_dimensions[c_].width = w_
-LB = L("B")
-TARGET = SET["target"]
-
-# ---- day-1 readout: every planning value next to what the log measures
-section(ws, 29, "Day-1 readout: planning values vs what the log shows (the sheet switches to measured once there is enough data)", 6)
-header(ws, 30, ["Measure", "Used", "Planning", "Measured", "Based on", "How it is measured"])
+# ---- planning values next to what the log measures
+section(ws, 35, "PLANNING vs LIVE  Each assumption next to what the log shows (the model uses the measured value once there is "
+                "enough data)", 6)
+header(ws, 36, ["Measure", "Used by the model", "Planning", "Measured", "Based on", "How it is measured"])
 span = lambda who: (f'IF(COUNTIFS({LB},"{who}",{LTRY},1)>1,(_xlfn.MAXIFS({LT},{LB},"{who}",{LTRY},1)'
                     f'-_xlfn.MINIFS({LT},{LB},"{who}",{LTRY},1))*1440,0)')
 ntry = lambda who: f'MAX(0,COUNTIFS({LB},"{who}",{LTRY},1)-1)'
-said_yes = lambda j: f'(COUNTIFS({LKEY},"*|{j}",{LO},"BOOKED")+COUNTIFS({LKEY},"*|{j}",{LO},"SENT_LINK"))'
 readout = [
-    (31, "Minutes per try", f'={SET["mintry"]}',
-     f'=IF(E31<2,"-",({span("Ram")}+{span("Shyam")})/MAX(1,{ntry("Ram")}+{ntry("Shyam")}))', "=B14", 30, "0.0",
+    (37, "Minutes per try", f'={SET["mintry"]}',
+     f'=IF(E37<2,"-",({span("Ram")}+{span("Shyam")})/MAX(1,{ntry("Ram")}+{ntry("Shyam")}))', "=B17", 30, "0.0",
      "Time between an intern's consecutive tries, breaks included."),
-    (32, "Try 1: share where the person said yes", f'={SET["b1"]}',
-     f'=IF(E32=0,"-",{said_yes(1)}/E32)', f'=COUNTIF({LKEY},"*|1")', 20, "0%", "BOOKED or SENT_LINK on a first try."),
-    (33, "Try 2: share where the person said yes", f'={SET["b1"]}*{SET["decay"]}',
-     f'=IF(E33=0,"-",{said_yes(2)}/E33)', f'=COUNTIF({LKEY},"*|2")', 20, "0%",
-     "If this is far below try 1, extra interns buy little."),
-    (34, "Try 3: share where the person said yes", f'={SET["b1"]}*{SET["decay"]}^2',
-     f'=IF(E34=0,"-",{said_yes(3)}/E34)', f'=COUNTIF({LKEY},"*|3")', 20, "0%", ""),
-    (35, "Share of requests candidates booked themselves", f'={SET["pself"]}',
-     '=IF(B6=0,"-",B11/B6)', "=B6", None, "0%", "Read after the deadline; until then the planning value is used."),
+] + [
+    (37 + j, f"Try {j}: share ending in a confirmed booking", f'={SET["b1"]}*{SET["decay"]}^{j - 1}',
+     f'=IF(E{37 + j}=0,"-",SUMIFS({LOK},{LKEY},"*|{j}")/E{37 + j})', f'=COUNTIF({LKEY},"*|{j}")', 20, "0%",
+     ["Confirmed = BOOKED by us, or the candidate's booking logged after our link. A link alone never counts.",
+      "If this is far below try 1, extra interns buy little.", ""][j - 1])
+    for j in (1, 2, 3)
+] + [
+    (41, "Share of requests candidates book on their own", f'={SET["pself"]}',
+     '=IF(B6=0,"-",B13/B6)', "=B6", None, "0%", "Read after the deadline; until then the planning value is used."),
 ]
 for r, lab, plan, meas, n, need, fmt, how in readout:
     ws.cell(r, 1, lab).font = f_norm
@@ -658,58 +698,58 @@ for r, lab, plan, meas, n, need, fmt, how in readout:
     ws.cell(r, 5).font = f_norm
 
 # ---- can we reach the target? Tries go to first tries first, then second, then third.
-section(ws, 37, "Can we reach the target?  (people who said yes are counted as booked)", 6)
+section(ws, 43, "MODEL  Can we reach the target? (arithmetic on the 'Used by the model' column: an upper bound, not a forecast)", 6)
 dl = f"MOD(MAX({DK('V')}),1)"
-kv(38, "Intern minutes before the deadline (Ram + Shyam)",
+kv(44, "Intern minutes before the deadline (Ram + Shyam)",
    f'=IF(B6=0,0,(MAX(0,MIN({SET["ram1"]},{dl})-{SET["ram0"]})+MAX(0,MIN({SET["shy1"]},{dl})-{SET["shy0"]}))*1440)', "0")
-kv(39, "Tries today's staff can make", "=IF(B31=0,0,ROUNDDOWN(B38/B31,0))", "0")
-kv(40, "People to reach by phone (not self-booked, contacts usable)",
-   f'=B8*(1-B35)*(1-COUNTIF({DK("AL")},"Bad contact details")/MAX(1,B6))', "0")
-header(ws, 41, ["Round", "People waiting", "Say yes", "Booked if all tried", "Tries by today's staff"])
+kv(45, "Tries today's staff can make", "=IF(B37=0,0,ROUNDDOWN(B44/B37,0))", "0")
+kv(46, "People to reach by phone (not booking on their own, contacts usable)",
+   f'=B8*(1-B41)*(1-COUNTIF({DK("AL")},"Bad contact details")/MAX(1,B6))', "0")
+header(ws, 47, ["Round", "People waiting", "Confirmed booking rate", "Booked if all tried", "Tries by today's staff"])
 for j in (1, 2, 3):
-    r = 41 + j
+    r = 47 + j
     ws.cell(r, 1, f"Try {j}").font = f_norm
-    ws.cell(r, 2, "=B40" if j == 1 else f"=B{r - 1}-D{r - 1}").number_format = "0"
-    ws.cell(r, 3, f"=B{31 + j}").number_format = "0%"
+    ws.cell(r, 2, "=B46" if j == 1 else f"=B{r - 1}-D{r - 1}").number_format = "0"
+    ws.cell(r, 3, f"=B{37 + j}").number_format = "0%"
     ws.cell(r, 4, f"=B{r}*C{r}").number_format = "0"
-    used = "0" if j == 1 else "+".join(f"B{41 + i}" for i in range(1, j))
-    ws.cell(r, 5, f"=MIN(B{r},MAX(0,$B$39-({used})))").number_format = "0"
+    used = "0" if j == 1 else "+".join(f"B{47 + i}" for i in range(1, j))
+    ws.cell(r, 5, f"=MIN(B{r},MAX(0,$B$45-({used})))").number_format = "0"
     for c_ in range(2, 6):
         ws.cell(r, c_).font = f_norm
-kv(45, "Expected share with today's staff", "=IF(B8=0,0,(B8*B35+E42*C42+E43*C43+E44*C44)/B8)", "0%", bold=True)
-kv(46, "Best case with unlimited interns (3 tries each)", "=IF(B8=0,0,(B8*B35+D42+D43+D44)/B8)", "0%", bold=True)
-kv(47, "People interns must book to hit the target", f"=MAX(0,{TARGET}*B8-B8*B35)", "0")
-kv(48, "Tries needed", ('=IFERROR(IF(B47<=D42,B47/C42,IF(B47<=D42+D43,B42+(B47-D42)/C43,'
-                        'IF(B47<=D42+D43+D44,B42+B43+(B47-D42-D43)/C44,"-"))),"-")'), "0")
-kv(49, "Interns needed (same shift length as today)", '=IF(ISNUMBER(B48),MAX(1,ROUNDUP(B48*B31/(B38/2),0)),"-")', "0")
-ws["A50"], ws["A50"].font = "Verdict", f_bold
-ws["A50"].alignment = wrap
-ws["B50"] = (f'=IF(B8=0,"-",IF(B46<{TARGET},"Not reachable with 3 tries each, even with unlimited interns (best case "'
-             f'&TEXT(B46,"0%")&"). Raise self-booking (evening message pilot, MESSAGES), make later tries work (evening '
+kv(51, "Expected share with today's staff", "=IF(B8=0,0,(B8*B41+E48*C48+E49*C49+E50*C50)/B8)", "0%", bold=True)
+kv(52, "Best case with unlimited interns (3 tries each)", "=IF(B8=0,0,(B8*B41+D48+D49+D50)/B8)", "0%", bold=True)
+kv(53, "People interns must book to hit the target", f"=MAX(0,{TARGET}*B8-B8*B41)", "0")
+kv(54, "Tries needed", ('=IFERROR(IF(B53<=D48,B53/C48,IF(B53<=D48+D49,B48+(B53-D48)/C49,'
+                        'IF(B53<=D48+D49+D50,B48+B49+(B53-D48-D49)/C50,"-"))),"-")'), "0")
+kv(55, "Interns needed (same shift length as today)", '=IF(ISNUMBER(B54),MAX(1,ROUNDUP(B54*B37/(B44/2),0)),"-")', "0")
+ws["A56"], ws["A56"].font = "Verdict", f_bold
+ws["A56"].alignment = wrap
+ws["B56"] = (f'=IF(B8=0,"-",IF(B52<{TARGET},"Not reachable with 3 tries each, even with unlimited interns (best case "'
+             f'&TEXT(B52,"0%")&"). Raise self-booking (evening message pilot, MESSAGES), make later tries work (evening '
              f'retries), or agree a different target with Weekday using these numbers.",'
-             f'IF(B45>={TARGET},"Today\'s staff can reach the target.","Reachable with about "&B49&" interns on today\'s '
-             f'shifts (best case "&TEXT(B46,"0%")&")")))')
-ws["B50"].font, ws["B50"].alignment = f_bold, wrap
-ws.merge_cells("B50:F50")
-ws.row_dimensions[50].height = 44
+             f'IF(B51>={TARGET},"Today\'s staff can reach the target.","Reachable with about "&B55&" interns on today\'s '
+             f'shifts (best case "&TEXT(B52,"0%")&")")))')
+ws["B56"].font, ws["B56"].alignment = f_bold, wrap
+ws.merge_cells("B56:F56")
+ws.row_dimensions[56].height = 44
 
 # ---- cost, and which decisions survive wrong assumptions
-section(ws, 52, "Cost: is extra capacity worth paying for, and how wrong can the assumptions be?", 6)
-kv(53, "Cost of one intern-day (Rs)", f'={SET["stip"]}/{SET["days"]}', "#,##0")
-kv(54, "Cost per try (Rs)", '=IF(B39=0,"-",B53/(B39/2))', "#,##0.0")
-kv(55, "Expected value of one scheduled interview to Weekday (Rs)", f'={SET["fee"]}*{SET["ctc"]}*{SET["hire"]}', "#,##0",
+section(ws, 58, "COST  Is extra capacity worth paying for, and how wrong can the assumptions be? (inputs in SETTINGS)", 6)
+kv(59, "Cost of one intern-day (Rs)", f'={SET["stip"]}/{SET["days"]}', "#,##0")
+kv(60, "Cost per try (Rs)", '=IF(B45=0,"-",B59/(B45/2))', "#,##0.0")
+kv(61, "Expected value of one scheduled interview to Weekday (Rs)", f'={SET["fee"]}*{SET["ctc"]}*{SET["hire"]}', "#,##0",
    "Fee x CTC x hires per interview, all from SETTINGS.")
-kv(56, "Cost per interview from a first try (Rs)", '=IFERROR(B54/(C42*B6/B8),"-")', "#,##0")
-kv(57, "Cost per interview from a third try (Rs): what the last extra intern buys", '=IFERROR(B54/(C44*B6/B8),"-")', "#,##0")
-kv(58, "Extra tries still pay if at least 1 in N books. N =", '=IFERROR(ROUNDDOWN(B55*B6/B8/B54,0),"-")', "#,##0",
+kv(62, "Cost per interview from a first try (Rs)", '=IFERROR(B60/(C48*B6/B8),"-")', "#,##0")
+kv(63, "Cost per interview from a third try (Rs): what the last extra intern buys", '=IFERROR(B60/(C50*B6/B8),"-")', "#,##0")
+kv(64, "Extra tries still pay if at least 1 in N books. N =", '=IFERROR(ROUNDDOWN(B61*B6/B8/B60,0),"-")', "#,##0",
    "Compare with the try-3 rate above. While try 3 books more often than 1 in N, adding interns pays.")
-kv(59, "Hire rate at which third tries stop paying", f'=IFERROR(B57/({SET["fee"]}*{SET["ctc"]}),"-")', "0.00%",
+kv(65, "Hire rate at which third tries stop paying", f'=IFERROR(B63/({SET["fee"]}*{SET["ctc"]}),"-")', "0.00%",
    "If Weekday's real hire rate per interview is above this, the staffing decision holds.")
-kv(60, "Gap to target today (requests)", f"=MAX(0,ROUNDUP({TARGET}*B6,0)-B9)", "0")
-kv(61, "Revenue at risk from the gap, per day (Rs)", f'=B60*{SET["lost"]}*B55', "#,##0",
+kv(66, "Gap to target today (requests)", f"=MAX(0,ROUNDUP({TARGET}*B6,0)-B10)", "0")
+kv(67, "Revenue at risk from the gap, per day (Rs)", f'=B66*{SET["lost"]}*B61', "#,##0",
    "Only late requests that are never interviewed count as lost.")
-kv(62, "Extra interns needed, cost per day (Rs)", '=IF(ISNUMBER(B49),MAX(0,B49-2)*B53,"not reachable by staffing")', "#,##0")
-kv(63, "Evening WhatsApp to everyone, 2 messages, cost per day (Rs)",
+kv(68, "Extra interns needed, cost per day (Rs)", '=IF(ISNUMBER(B55),MAX(0,B55-2)*B59,"not reachable by staffing")', "#,##0")
+kv(69, "Evening WhatsApp to everyone, 2 messages, cost per day (Rs)",
    f'="Rs "&TEXT(B8*2*{SET["wautil"]},"#,##0")&" - "&TEXT(B8*2*{SET["wamkt"]},"#,##0")', None,
    "Utility vs marketing rate (Meta decides). Plus the provider's monthly fee. Effect unknown until the MESSAGES pilot.")
 
@@ -744,7 +784,8 @@ dv = DataValidation(type="list", formula1='"SEND group only,Everyone"', allow_bl
 ws.add_data_validation(dv)
 dv.add("J3")
 ws["I4"] = ("Pilot: people are split SEND / HOLD by a phone digit. Both groups are called as normal; only SEND gets "
-            "the evening message. Compare the two rows below after the deadline.")
+            "the evening message. Compare the two rows below after the deadline. A YES reply is not a booking: it only "
+            "moves the person to the top of an intern's list.")
 ws["I4"].font, ws["I4"].alignment = f_note, wrap
 ws.merge_cells("I4:M5")
 header(ws, 5, ["Pilot group", "Requests", "Scheduled in 24h", "Share", "Delivered", "Failed", "Replied YES", "Replied STOP"])
@@ -761,11 +802,11 @@ for k, g in enumerate(("SEND", "HOLD")):
     ws.cell(r, 8, f'=COUNTIFS({DK("AK")},1,{DK("AV")},A{r},{DK("AT")},"*STOP*")')
     for c_ in range(2, 9):
         ws.cell(r, c_).font = f_norm
-header(ws, 8, ["#", "Phone (with 91)", "Template", "{{1}} first name", "{{2}} company", "{{3}} link", "Pilot group", "",
+header(ws, 8, ["#", "Phone (with 91)", "Template", "{{1}} first name", "{{2}} company", "{{3}} link", "Pilot group",
+               "Request ID of {{2}}",
                "PASTE provider report (any order): phone", "Status (DELIVERED / READ / FAILED)", "Reply text", "Reply time",
                "phone (auto)"],
        widths=[8, 15, 12, 14, 26, 40, 11, 11, 18, 16, 24, 16, 12])
-ws.cell(8, 8).fill = PatternFill(fill_type=None)
 ws.row_dimensions[5].height = 30
 for k in range(1, NROWS + 1):
     r = 8 + k
@@ -780,7 +821,8 @@ for k in range(1, NROWS + 1):
     ws.cell(r, 5, f'=IF(B{r}="","",{ixd("B")}&IF({n_req}>1," and "&({n_req}-1)&" more",""))')
     ws.cell(r, 6, f'=IF(B{r}="","",IF(C{r}="B",{ixd("AD")},""))')
     ws.cell(r, 7, f'=IF(B{r}="","",{ixd("AV")})')
-    for c_ in range(2, 8):
+    ws.cell(r, 8, f'=IF(B{r}="","",{ixd("AW")})')
+    for c_ in range(2, 9):
         ws.cell(r, c_).font = f_norm
     ws.cell(r, 2).number_format = "@"
 for r in range(9, MSGN + 9):
@@ -802,7 +844,7 @@ ws["B1"], ws["B1"].font = "How to work the list", f_title
 steps = [
     ("1", "Open your tab", "RAM or SHYAM. Start at row 1."),
     ("2", "Do what column G says", "Click Call. Then book, or send the WhatsApp, as column G says."),
-    ("3", "Log it", "Go to LOG. Add ONE line: time (Ctrl+Shift+;), your name, the phone, the outcome."),
+    ("3", "Log it", "Go to LOG. Add ONE line: time (Ctrl+Shift+;), your name, the phone, the outcome. Request ID only if the answer is about one of their requests."),
     ("4", "Repeat", "Go back to your tab. The row you finished goes away and the next one moves up."),
 ]
 for i, (n_, a, b) in enumerate(steps, start=3):
@@ -819,7 +861,9 @@ for i, (code, when, *_r) in enumerate(outcomes, start=10):
         ws.cell(i, c_).border = box
 ws["B20"], ws["B20"].font = "Good to know", f_title
 notes = [
-    ("Two companies, two answers", "Yes to one, no to the other? Write two lines: BOOKED and NOT_INTERESTED, each with the company in column E."),
+    ("Two requests, two answers", "Yes to one, no to the other? Write two lines: BOOKED and NOT_INTERESTED, each with its request "
+     "ID (R0..) in column E. Copy the ID from column D of your list. Blank E means all their open requests."),
+    ("Link sent is not booked", "SENT_LINK only means they have the link. The row comes back later so you can check it was booked."),
     ("Someone replies later", "Type their phone in the yellow box at the top of your tab (\"Reply or call-back? Phone\"). It shows what to book."),
     ("Orange cell in LOG", "Something is wrong with that line. Column J says what. Fix it."),
     ("Yellow row", "Less than 4 hours left. These rows are already at the top."),

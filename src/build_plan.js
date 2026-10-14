@@ -67,6 +67,8 @@ function box(lines) {
   });
 }
 const gap = () => new Paragraph({ spacing: { after: 60 }, children: [] });
+const summ = (label, text) =>
+  new Paragraph({ spacing: { after: 60, line: 250 }, children: [run(label + ".  ", { bold: true, color: NAVY }), run(text)] });
 
 const doc = new Document({
   creator: "Weekday scheduling desk",
@@ -87,78 +89,68 @@ const doc = new Document({
                  new TextRun({ children: [PageNumber.CURRENT], font: FONT, size: 16, color: GREY })] })] }) },
     children: [
       new Paragraph({ spacing: { after: 30 }, children: [new TextRun({ text: "Weekday Scheduling Desk", font: FONT, size: 34, bold: true, color: NAVY })] }),
-      new Paragraph({ spacing: { after: 130 }, children: [run("What two interns can deliver, what it takes to reach 80%, and what happens if we can't", { color: GREY })] }),
+      new Paragraph({ spacing: { after: 120 }, children: [run("Summary, the evidence behind it, and what happens next", { color: GREY })] }),
 
       box([
-        new Paragraph({ spacing: { after: 70 }, children: [run("Two interns working by hand will schedule about 45% of requests within 24 hours. 80% is reachable only if three things hold at once.", { bold: true, size: 22 })] }),
-        new Paragraph({ spacing: { after: 40, line: 255 }, children: [run("(1) About 40% of candidates book by themselves, which is the job of an evening WhatsApp message (today's planning value is 25%). (2) Second and third tries keep about 70% of a first try's success. (3) About 5 interns. All three are measured in the first week. If any of them fails, the dashboard shows it before the day-6 decision, and we switch to the fallback in section 2 instead of hiring blindly.")] }),
+        summ("Problem", "About 500 interview requests arrive each evening around 19:51. Weekday wants 80% scheduled within 24 hours by two interns, Ram and Shyam, following a process simple enough to use without judgement."),
+        summ("What I built", "A spreadsheet that runs in Excel and should run in Google Sheets. Interns see four tabs: a ranked list per intern with one instruction per row, a pre-filled WhatsApp message and booking links, and a log of one line per conversation. Every request keeps its ID from the partner's sheet to the final booking, and a sent link never counts as a booking. The lead gets a dashboard that puts each assumption next to what the log measures, plus a tab for piloting an evening WhatsApp."),
+        summ("Most defensible finding", "Two interns cannot reach 80% by phone. Before the deadline they can make about 210 tries for about 430 people, so even if every try booked, interns would schedule at most about 49% of requests [A]. Reaching 80% needs candidates to book at least 31% of requests on their own, more hands, or both. My planning estimate for two interns is about 45% [B]."),
+        summ("Limitations", "No real intern, candidate or partner has used the sheet. It has not been opened in Google Sheets. Every behavioural rate is an assumption: booking per try, self-booking, and the evening message's effect. The simulated results come from those same assumptions, so they cannot confirm them."),
+        summ("Next experiment", "First, a 30-minute test with two people new to the file, and the Google Sheets check. Then two live days with two interns, measuring three numbers: confirmed bookings by try number, minutes per try, and the share of candidates who book alone. Those three decide whether more interns can reach 80% at all, before anyone is hired."),
       ]),
 
-      h1("1. Why about 45% today"),
-      table([6400, 1700, 2366], ["Step (one evening batch, worked the next day)", "Value", "Source"], [
-        ["Unique requests / people behind them", "500 / ~430", "Brief; demo data"],
-        ["Intern minutes before the 19:51 deadline (Ram 10:00-18:00, Shyam 12:00-19:51)", "951", "Shifts"],
-        [[b("Tries two interns can make")], [b("~210")], "951 / 4.5 min per try"],
-        [[b("Most they could book, even if every try booked")], [b("~49%")], "No behavioural assumption"],
-        ["Realistic: about half of first tries say yes; a quarter of requests booked by candidates alone", [b("~45%")], "ASSUMED; measured day 1"],
+      h1("1. How much to trust each number"),
+      table([2350, 3700, 2500, 1916], ["Tier", "What it is", "Numbers in this document", "Trust"], [
+        [[b("A  Analytical ceiling")], "Arithmetic from shift length and minutes per try. No assumption about candidates.", "~210 tries; interns book at most ~49%", "High; minutes per try is measured on day 1"],
+        [[b("B  Planning estimate")], "The same arithmetic with assumed rates for booking per try and self-booking.", "~45% with two interns; the grid in section 3", "Low until day-1 data"],
+        [[b("C  Simulated results")], "Candidate behaviour drawn at random from the same assumed rates, in the dry run.", "40% (no evening message), 49% (with)", "Low: cannot test the assumptions"],
+        [[b("D  Synthetic dry-run results")], "Pass/fail checks of the sheet, run on fake data.", "All mechanics checks pass (section 6)", "High for the sheet; says nothing about candidates"],
+        [[b("E  Untested intervention scenarios")], "What-ifs: the evening message, more interns, later tries holding up.", "Self-booking 25% to 40%; 5-6 interns", "Hypotheses until piloted"],
+        [[b("F  Measured in real operations")], "Real interns, candidates, partners.", "None yet", "-"],
+      ]),
+
+      h1("2. The finding"),
+      table([6400, 1700, 2366], ["Step (one evening batch, worked the next day)", "Value", "Tier"], [
+        ["Unique requests / people behind them (demo batch)", "500 / ~430", "Brief; demo data"],
+        ["Intern minutes before the 19:51 deadline (Ram 10:00-18:00, Shyam 12:00-19:51)", "951", "A"],
+        [[b("Tries two interns can make, at 4.5 minutes per try")], [b("~210")], "A"],
+        [[b("Most interns could book, even if every try booked (1.17 requests per person)")], [b("~49%")], "A"],
+        ["With 40% of first tries confirmed (fewer later) and 25% of requests booked by candidates alone", [b("~45%")], "B"],
       ], [1]),
-      para([run("The simulated test day delivered 42-48% (without and with the evening message). That only shows the sheet works: the test bot uses the same assumed rates, so it is not evidence about real candidates.", { size: 17, color: GREY })], { spacing: { before: 60, after: 40 } }),
+      para([run("\"Confirmed\" means booked by an intern, or booked by the candidate and logged after we sent the link. A sent link alone never counts. That stricter definition lowered the planning rate from 45% (\"said yes\") to 40%.", { size: 17, color: GREY })], { spacing: { before: 60, after: 40 } }),
 
-      h1("2. How the system reaches 80%, and what if it can't"),
-      para("A plain arithmetic model (analysis/scenarios.py, no simulation) gives the share scheduled within 24 hours. The dashboard runs the same calculation live with the measured rates."),
+      h1("3. What 80% would take, and the fallback"),
+      para("The share scheduled within 24 hours, from the arithmetic in analysis/scenarios.py [B/E]. The dashboard runs the same calculation on live numbers."),
       table([1500, 1300, 1700, 1050, 1050, 1050, 1300, 1516],
-        ["Candidates self-book", "Try 1: says yes", "Later tries keep", "2 interns", "4 interns", "6 interns", "Best case", "Interns for 80%"], [
-        ["25%", "45%", "100%", "47%", "70%", "86%", "86%", "5"],
-        ["25%", "45%", "70%", "47%", "66%", "76%", "76%", [b("not reachable")]],
-        ["25%", "45%", "40%", "47%", "62%", "67%", "67%", [b("not reachable")]],
-        ["40%", "45%", "70%", "62%", "78%", "81%", "81%", "5"],
-        ["40%", "35%", "70%", "57%", "70%", "75%", "75%", [b("not reachable")]],
-        ["40%", "45%", "40%", "62%", "73%", "74%", "74%", [b("not reachable")]],
+        ["Candidates book alone", "Try 1 confirmed", "Later tries keep", "2 interns", "4 interns", "6 interns", "Best case", "Interns for 80%"], [
+        ["25%", "40%", "100%", "45%", "65%", "82%", "82%", "6"],
+        ["25%", "40%", "70%", "45%", "62%", "72%", "72%", [b("not reachable")]],
+        ["25%", "40%", "40%", "45%", "58%", "63%", "63%", [b("not reachable")]],
+        ["40%", "40%", "100%", "60%", "80%", "86%", "86%", "5"],
+        ["40%", "40%", "70%", "60%", "74%", "78%", "78%", [b("not reachable")]],
+        ["40%", "40%", "40%", "60%", "69%", "71%", "71%", [b("not reachable")]],
       ], [3, 4, 5, 6]),
-      para([b("Reading it: "), run("extra interns help only while later tries still book. If the third try works far worse than the first, the best case stalls in the 60s and 70s whatever the staffing. Then only more self-booking moves the number.")], { spacing: { before: 70 } }),
-      para([b("Three gates, each with a decision:")]),
-      num([b("Days 1-2, two interns live "), run("(after the tests in section 5). The DASHBOARD readout measures minutes per try, the yes-rate on tries 1, 2 and 3, and the self-booking share, then recomputes the best case and the interns needed.")]),
-      num([b("Days 3-5, evening-message pilot "), run("(section 3). It measures how much the message raises self-booking: the first row of the table above.")]),
-      num([b("Day 6, decide. "), run("If the best case is 80% or more, staff to the number the dashboard gives. If it is below 80%, use the fallback.")]),
-      para([b("Fallback if 80% is out of reach: "), run("(a) Take the measured best case to Weekday and agree what the KPI should count, using the dashboard's own numbers. For example: 80% of requests with usable contacts that did not opt out, or 80% within 48 hours. (b) Upstream fixes: re-confirm interest before a request is sent, and get slot guarantees from partners. (c) Keep the extra capacity that still pays for itself (section 4); it raises the result even below 80%. If no extra interns can be hired at all, the list still orders work by who is most likely to book and who is closest to the deadline, so two interns get the most out of their 210 tries.")]),
+      para([b("Reading it: "), run("80% needs second and third tries to work almost as well as first tries, plus 5-6 interns. If later tries lose even a third of their power, the best case is 72-78% however many interns are added. My own expectation is that later tries do lose power, so the likely outcome is a conversation with Weekday about the target, backed by measured numbers. That is an expectation, not a finding, and the next experiment tests it.")], { spacing: { before: 70 } }),
+      para([b("Gates. "), run("Days 1-2: two interns live; the dashboard measures confirmed bookings by try number, minutes per try and self-booking. Days 3-5: evening-message pilot (section 5). Day 6: if the measured best case is 80% or more, staff to the dashboard's number. If it is below 80%, use the fallback.")]),
+      para([b("Fallback. "), run("(a) Agree the KPI with Weekday on the measured best case: for example, 80% of requests with usable contacts that did not opt out, or 80% within 48 hours. (b) Upstream: re-confirm interest before a request is sent, and get slot guarantees from partners. (c) Keep any extra capacity that pays for itself (section 5). With no extra staff at all, the list still puts the likeliest bookings and the nearest deadlines first.")]),
 
-      h1("3. The evening WhatsApp: a hypothesis to pilot, not a fact"),
-      para([run("Its cost (Rs 100-750 a day) and its effect are unproven. Here is what exists, what doesn't, and how to test it. "), b("Built: "),
-            run("a lead-only MESSAGES tab with the two template texts and a send list for the provider's bulk upload. The send list stays empty until opt-in is confirmed, and candidates are split SEND/HOLD by a phone digit. There is a paste-back area for the provider's report: a YES reply puts the person at the top of an intern's list, a STOP reply closes them, and a failed delivery tells the intern to call only. A SEND-vs-HOLD readout compares 24-hour completion. In the test, all 6 STOP repliers stayed off the lists, and the 23 YES repliers who reached a list appeared in its top 18 rows. "),
-            b("Not built: "), run("an automatic link to the WhatsApp API. The lead exports and imports files by hand once each evening.")]),
-      table([3000, 7466], ["Needed before the first send", "Detail"], [
-        ["WhatsApp Business account", "Through a provider (BSP). A few days to set up, plus a monthly platform fee."],
-        ["Approved templates", "Meta approves each template and decides its class. Utility is about Rs 0.12 a message, marketing about Rs 0.86, so 430 people x 2 messages costs Rs 100-750 a day."],
-        ["Candidate opt-in", "Weekday confirms candidates agreed to WhatsApp messages. Until then SETTINGS B22 stays NO and the send list stays empty."],
-        ["Opt-outs", "Every template says \"Reply STOP\"; the sheet closes anyone who does. The provider's own block list is kept too."],
-        ["Delivery failures and replies", "Come back in the provider's report. Pasting it in is the integration with the interns' lists."],
-        ["Quality rating", "Meta throttles senders whose messages get blocked or reported. Watch the rating during the pilot."],
-      ]),
-      para([b("Pilot design: "), run("3 working days with consented candidates only, with SEND and HOLD both called as normal. That is about 750 requests per group, enough to see an 8-point difference in 24-hour completion. Bar: SEND at least 8 points above HOLD. Below that, the message does not carry the path to 80%.")], { spacing: { before: 70 } }),
+      h1("4. What the interns do"),
+      bullet([b("Their list: "), run("one row per person, best first. Each request on the row shows its ID (R001...), with one instruction, a WhatsApp link with the message typed in, and the partner's booking link.")]),
+      bullet([b("One log line per conversation: "), run("time, name, phone, outcome. A blank request ID covers all of the person's open requests. A second line, naming the ID, is needed only when the answers differ by request.")]),
+      bullet([b("Honest messages and consent: "), run("no held-slot promises. Interns book in the partner's live calendar only where the partner agreed; otherwise they send the partner's link and check later.")]),
 
-      h1("4. Which decisions survive wrong assumptions"),
-      table([2700, 3300, 4466], ["Decision", "Depends on", "Holds if"], [
-        ["Use the sheet and its ordering", "Nothing behavioural", "Always: it organises the same work better."],
-        ["Add interns", "Value of an interview vs cost of a try (Rs 9)", "An extra try pays if at least 1 in 244 tries books, even at a 1% hire rate and Rs 12L CTC (an interview worth Rs 1,800). At 3% and Rs 18L it is 1 in 1,111. Planning value for try 3: about 1 in 5. Robust."],
-        ["Reach 80% by staffing", "Later-try success, self-booking", "Fragile: see the table in section 2. Measured on days 1-2."],
-        ["Run the evening message", "Its uplift", "Unknown until the pilot. At up to Rs 750 a day it costs less than one intern-day."],
-        ["\"Fees at risk\" figure", "Hire rate, CTC, share of late requests never interviewed", "Indicative only: Rs 1.2 lakh a day at a 1% hire rate, Rs 3.5 lakh at 3%, Rs 5.9 lakh at 5%. Use it to rank priorities, not as a forecast."],
-      ]),
+      h1("5. Supporting detail [E]: evening WhatsApp, costs, sensitivity"),
+      para([b("Evening WhatsApp (untested). "), run("Built: a lead-only MESSAGES tab with template texts and a send list that stays empty until candidate opt-in is confirmed. Candidates are split SEND/HOLD for an A/B pilot. The provider's report is pasted back in: YES moves a person up an intern's list (it is not a booking), STOP closes them. Not built: any automatic link to the WhatsApp API. Before the first send it needs a provider account, Meta-approved templates and confirmed opt-in. Cost: Rs 100-750 a day, depending on how Meta classes the template. Pilot: 3 days, about 750 requests per group, with a bar of SEND at least 8 points above HOLD.")]),
+      para([b("Cost and sensitivity. "), run("A try costs about Rs 9 of intern time. At Weekday's 15% fee, Rs 18 lakh CTC and a 3% hire rate, a scheduled interview is worth about Rs 8,100. So extra tries pay if at least 1 in 1,111 books, and still 1 in 244 at a 1% hire rate and Rs 12 lakh CTC. Adding interns is therefore a sound decision under any of these assumptions, as long as later tries book at all. What is fragile is whether staffing reaches 80% (section 3). \"Fees at risk\" from the gap ranges from Rs 1.2 to 5.9 lakh a day across hire rates of 1-5%, so it is indicative only.")]),
 
-      h1("5. Before calling it production-ready"),
-      table([2600, 5300, 2566], ["Gate", "What passes", "Status"], [
-        ["30-minute usability test", "Two people who have never seen the file read START HERE (5 min), then work their list (20 min) while the lead plays 10 scripted candidates. Pass: 9 of 10 log lines right, at most 2 questions each, under 6 minutes per try.", "Not run"],
-        ["Google Sheets acceptance", "11 checks in tests/SHEETS_ACCEPTANCE.md: formulas, links, the list updating within 5 seconds of a log line, two interns logging at once, sheet protection, a live clock (Sheets must recalculate every minute), and speed with a full day.", "Not run"],
-        ["One controlled live day", "Two interns, real requests. The DASHBOARD readout shows minutes per try, yes-rate by try number, self-booking share and 24-hour completion, each next to its planning value.", "After the two gates above"],
-      ]),
-
-      h1("6. Status of the evidence"),
+      h1("6. Gates before calling it production-ready, and test status [D]"),
       table([3000, 7466], ["Item", "Status"], [
-        ["Workbook mechanics (Excel)", "A full simulated day, run with and without the evening message: 0 formula errors, every log line checks OK, the sheet's try count equals the test bot's, at most 3 tries per person, no contact outside 10:00-21:00, 1.02-1.07 log lines per conversation."],
-        ["Dashboard capacity model", "On the simulated days it ran 5-6 points above what was delivered (47% vs 42% without the evening message, 53% vs 48% with it). Treat its \"expected\" figure as an upper bound."],
-        ["Google Sheets", "Every function used exists in Sheets. Not yet opened in Sheets."],
-        ["Behavioural rates, evening-message effect, hire rate", "Assumptions until week 1 and the pilot."],
-        ["Real interns, partners, candidates", "Not tested. Section 5 comes first."],
+        ["Request tracking", "29 of 29 scenario checks pass (tests/test_request_tracking.py). Covered: Round 1 and Round 2 at one company, three requests from one candidate, same company and round with two interviewers, a re-sent duplicate, a link that later converts, an explicit ID beating a blank line, wrong IDs flagged, NO_SLOTS by ID, and an ID used twice."],
+        ["Simulated day (two runs)", "Every check passes. The requests the sheet shows as booked exactly match the requests the bot booked (198 and 244), with the right split between intern bookings and candidate bookings. No sent link was counted as a booking. Every log line checks OK, 0 formula errors, at most 3 tries per person, no contact outside 10:00-21:00, about 1.06 log lines per conversation."],
+        ["Dashboard model vs simulated day [C]", "41% expected vs 40% delivered without the message; 50% vs 49% with it. Close, but both sides rest on the same assumed rates."],
+        ["30-minute usability test", "Not run. Pass: 9 of 10 log lines right, at most 2 questions per person, under 6 minutes per try."],
+        ["Google Sheets acceptance", "Not run. 11 checks in tests/SHEETS_ACCEPTANCE.md. Every function used exists in Sheets."],
+        ["One controlled live day", "After the two tests above. This produces the first tier-F numbers."],
       ]),
     ],
   }],

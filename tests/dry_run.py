@@ -1,10 +1,14 @@
 """
-Dry run: drive the workbook through one simulated working day (14 Oct 10:00 -> deadline 19:51).
+SYNTHETIC DRY RUN: drive the workbook through one simulated working day (14 Oct 10:00 -> deadline 19:51).
 
 A bot plays Ram and Shyam. It reads ONLY what the RAM / SHYAM tabs show, follows column G, and writes LOG lines
-exactly as START HERE tells an intern to. Candidate behaviour comes from hidden truth (tests/output/truth.json),
-drawn from the analysis model's ASSUMED rates. So this tests the sheet's mechanics; its booking rate is NOT
-evidence about real candidates and must not be quoted as one.
+exactly as START HERE tells an intern to, naming request IDs whenever an answer covers only some of a person's
+requests. Candidate behaviour comes from hidden truth (tests/output/truth.json), drawn at random from the analysis
+model's ASSUMED rates.
+
+Two kinds of output, kept apart in the result file:
+  * mechanics_checks: pass/fail tests of the sheet (evidence that the sheet works on synthetic data);
+  * simulated_outcomes_NOT_evidence: booking shares produced by assumed behaviour (not evidence about real candidates).
 
 Usage: python tests/dry_run.py [workbook]   (default: Weekday_Scheduling_Desk.xlsx; writes tests/output/)
        EVENING_MSG=0 python tests/dry_run.py   runs the day without the evening WhatsApp pilot
@@ -27,7 +31,8 @@ from excel import open_excel, sheet_errors  # noqa: E402
 
 SRC = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "Weekday_Scheduling_Desk.xlsx"))
 OUTD = os.path.join(HERE, "output")
-TAG = "" if os.environ.get("EVENING_MSG", "1") == "1" else "_no_message"
+EVENING = os.environ.get("EVENING_MSG", "1") == "1"
+TAG = "" if EVENING else "_no_message"
 DST = os.path.join(OUTD, f"dry_run_day1{TAG}.xlsx")
 shutil.copyfile(SRC, DST)
 
@@ -35,13 +40,11 @@ truth = json.load(open(os.path.join(OUTD, "truth.json")))
 DAY0 = dt.datetime.fromisoformat(truth["day0"])
 cls = {p: v["cls"] for p, v in truth["cand"].items()}
 consent = truth["consent"]
-self_min = {(r["phone"], r["company"], r["round"]): r["self_min"] for r in truth["req"]}
+req = {r["id"]: r for r in truth["req"]}                       # canonical request ID -> phone, company, round, self_min
 ANS = np.array(sim2.BASE["ans_p"])
 CONV, EXTRA, OPT = sim2.BASE["conv_p"], sim2.BASE["extra_conv"], sim2.BASE["opt_p"]
 P_LINK, LINK_DELAY = 0.6, (15, 180)        # ASSUMED: share who book after we send a link, and how long they take
-# Evening WhatsApp pilot (MESSAGES tab). Reply rates are INVENTED for the mechanics test, by candidate class:
-EVENING = os.environ.get("EVENING_MSG", "1") == "1"
-REPLY_YES = [0.35, 0.15, 0.03]             # replies YES (template A) or books from the link (template B)
+REPLY_YES = [0.35, 0.15, 0.03]             # INVENTED: evening reply YES (template A) / book from link (template B), by class
 REPLY_STOP = 0.01
 rng = np.random.default_rng(424242)
 
@@ -59,43 +62,13 @@ xl.Calculation = -4135            # manual; recalculated after each batch of lin
 S = wb.Worksheets
 log, settings = S("LOG"), S("SETTINGS")
 next_row = 2
-booked = set()                    # (phone, company, round) booked so far
-pending_link = []                 # (time, phone, company, round): candidate books from a link we sent
+booked = {}                       # request ID -> (time, "us" | "candidate")
+link_logged = {}                  # phone -> time of the first SENT_LINK line in LOG
+pending_link = []                 # (time, phone, request ID): candidate books from a link we sent
 stats = collections.Counter()
 codes_seen = collections.Counter()
 yes_phones, stop_phones = set(), set()
-yes_first_position = {}           # list position where a YES replier first appeared
-
-
-def evening_message():
-    """Lead confirms opt-in, exports the send list, and pastes the provider's report back (day 0, ~20:00-22:00)."""
-    settings.Range("B22").Value = "YES"
-    xl.CalculateFull()
-    report = []
-    for row in S("MESSAGES").Range(f"A9:G{8 + 600}").Value:
-        if row[1] in (None, ""):
-            continue
-        ph, template, company = str(row[1])[-10:], row[2], str(row[4]).split(" and ")[0]
-        stats["sent"] += 1
-        stats[f"template_{template}"] += 1
-        stats["template_matches_consent"] += (template == "A") == (consent[company] == "YES")
-        stats["template_B_has_link"] += template == "B" and str(row[5]).startswith("https://")
-        u, reply = rng.random(), ""
-        if u < REPLY_STOP:
-            reply = "STOP"
-            stop_phones.add(ph)
-        elif u < REPLY_STOP + REPLY_YES[cls[ph]]:
-            if template == "A":
-                reply = "Yes please"
-                yes_phones.add(ph)
-            else:
-                for (p2, comp, rd) in self_min:
-                    if p2 == ph and comp == company:
-                        pending_link.append((DAY0 + dt.timedelta(hours=20, minutes=float(rng.uniform(5, 120))), ph, comp, rd))
-        # alternate phone formats to test that the sheet matches "+91 ..." and plain numbers alike
-        report.append(("+91 " + ph if len(report) % 2 else ph, "DELIVERED", reply, ""))
-    if report:
-        S("MESSAGES").Range(f"I9:L{8 + len(report)}").Value = tuple(report)
+yes_first_position = {}
 
 
 def recalc(clock):
@@ -113,6 +86,41 @@ def write_log(lines):
     next_row += len(lines)
 
 
+def evening_message():
+    """Lead confirms opt-in, exports the send list, and pastes the provider's report back (day 0, ~20:00-22:00)."""
+    settings.Range("B22").Value = "YES"
+    xl.CalculateFull()
+    report = []
+    for row in S("MESSAGES").Range("A9:H608").Value:
+        if row[1] in (None, ""):
+            continue
+        ph, template, rid = str(row[1])[-10:], row[2], row[7]
+        stats["sent"] += 1
+        stats[f"template_{template}"] += 1
+        stats["template_matches_consent"] += (template == "A") == (consent[req[rid]["company"]] == "YES")
+        stats["template_B_has_link"] += template == "B" and str(row[5]).startswith("https://")
+        u, reply = rng.random(), ""
+        if u < REPLY_STOP:
+            reply = "STOP"
+            stop_phones.add(ph)
+        elif u < REPLY_STOP + REPLY_YES[cls[ph]]:
+            if template == "A":
+                reply = "Yes please"
+                yes_phones.add(ph)
+            else:                     # books the request the link is for, by its ID
+                pending_link.append((DAY0 + dt.timedelta(hours=20, minutes=float(rng.uniform(5, 120))), ph, rid))
+        # alternate phone formats to test that the sheet matches "+91 ..." and plain numbers alike
+        report.append(("+91 " + ph if len(report) % 2 else ph, "DELIVERED", reply, ""))
+    if report:
+        S("MESSAGES").Range(f"I9:L{8 + len(report)}").Value = tuple(report)
+
+
+def dashboard():
+    """Column A label -> column B value, for every labelled row on DASHBOARD."""
+    v = S("DASHBOARD").Range("A1:E69").Value
+    return {str(r[0]).strip(): r[1] for r in v if r[0]}
+
+
 try:
     if EVENING:
         evening_message()
@@ -120,18 +128,23 @@ try:
     recalc(clock)
     while True:
         lines = []
-        # 1. bookings candidates made themselves (the lead copies Calendly confirmations into LOG)
-        for (ph, comp, rd), sm in self_min.items():
-            if sm is not None and (ph, comp, rd) not in booked and DAY0 + dt.timedelta(minutes=sm) <= clock:
-                booked.add((ph, comp, rd))
-                lines.append([DAY0 + dt.timedelta(minutes=sm), "Lead", ph, "SELF_BOOKED", comp, "calendly confirmation"])
+        # 1. bookings candidates made themselves (the lead copies Calendly confirmations into LOG, by request ID)
+        for rid, r in req.items():
+            sm = r["self_min"]
+            if sm is not None and rid not in booked and DAY0 + dt.timedelta(minutes=sm) <= clock:
+                t = DAY0 + dt.timedelta(minutes=sm)
+                booked[rid] = (t, "candidate")
+                lines.append([t, "Lead", r["phone"], "SELF_BOOKED", rid, "calendly confirmation"])
         for item in list(pending_link):
-            t, ph, comp, rd = item
+            t, ph, rid = item
             if t <= clock:
                 pending_link.remove(item)
-                if (ph, comp, rd) not in booked:
-                    booked.add((ph, comp, rd))
-                    lines.append([t, "Lead", ph, "SELF_BOOKED", comp, "booked from our link"])
+                if rid not in booked:
+                    booked[rid] = (t, "candidate")
+                    lines.append([t, "Lead", ph, "SELF_BOOKED", rid, "booked from our link"])
+        write_log(lines)              # the lead logs confirmations first, so the interns' lists are current
+        recalc(clock)
+        lines = []
         # 2. interns work their list top to bottom
         for who, sheet in (("Ram", "RAM"), ("Shyam", "SHYAM")):
             lo, hi = SHIFT[who]
@@ -150,11 +163,10 @@ try:
                 stats["yes_label_without_yes_reply"] += replied_yes and phone not in yes_phones
                 if phone in yes_phones:
                     yes_first_position.setdefault(phone, pos)
-                items = []
-                for x in str(row[3]).split("; "):
-                    comp, rd = x.rsplit(" ", 1)
-                    if (phone, comp, rd) not in booked:
-                        items.append((comp, rd))
+                ids = [x.split(" ", 1)[0] for x in str(row[3]).split("; ")]
+                stats["listed_ids_not_this_persons"] += sum(req.get(i, {}).get("phone") != phone for i in ids)
+                items = [i for i in ids if i not in booked]
+                stats["listed_ids_already_booked"] += len(ids) - len(items)
                 if not items:
                     continue
                 cost = (2.0 if replied_yes else float(rng.uniform(3, 6))) + 1.5 * (len(items) - 1)
@@ -163,28 +175,28 @@ try:
                 t_local += cost
                 when = DAY0 + dt.timedelta(minutes=t_local)
                 stats["tries"] += 1
-                stats["rows_with_last_try_label"] += str(row[6]).startswith("LAST TRY")
                 n_before = len(lines)
                 answered = replied_yes or rng.random() < min(1.0, ANS[cls[phone]] * sim2.tod_factor(t_local))
                 if replied_yes or (answered and rng.random() < CONV):
-                    keep = [it for j, it in enumerate(items) if j == 0 or rng.random() < EXTRA]
-                    drop = [it for it in items if it not in keep]
-                    link_items = [it for it in keep if consent[it[0]] != "YES"]
-                    book_items = [it for it in keep if consent[it[0]] == "YES"]
+                    keep = [i for j, i in enumerate(items) if j == 0 or rng.random() < EXTRA]
+                    drop = [i for i in items if i not in keep]
+                    link_items = [i for i in keep if consent[req[i]["company"]] != "YES"]
+                    book_items = [i for i in keep if consent[req[i]["company"]] == "YES"]
                     if link_items:          # the try line comes first; same-conversation lines follow within a minute
+                        link_logged.setdefault(phone, when)
                         lines.append([when, who, phone, "SENT_LINK", "", "sent booking link"])
-                        for comp, rd in link_items:
+                        for i in link_items:
                             if rng.random() < P_LINK:
-                                pending_link.append((when + dt.timedelta(minutes=float(rng.uniform(*LINK_DELAY))), phone, comp, rd))
+                                pending_link.append((when + dt.timedelta(minutes=float(rng.uniform(*LINK_DELAY))), phone, i))
                     if book_items and not link_items and not drop:
-                        lines.append([when, who, phone, "BOOKED", "", ""])
+                        lines.append([when, who, phone, "BOOKED", "", ""])        # blank ID = all their open requests
                     else:
-                        for comp, rd in book_items:
-                            lines.append([when + dt.timedelta(seconds=20), who, phone, "BOOKED", comp, ""])
-                    for comp, rd in book_items:
-                        booked.add((phone, comp, rd))
-                    for comp, rd in drop:
-                        lines.append([when + dt.timedelta(seconds=40), who, phone, "NOT_INTERESTED", comp, "declined this one"])
+                        for i in book_items:
+                            lines.append([when + dt.timedelta(seconds=20), who, phone, "BOOKED", i, ""])
+                    for i in book_items:
+                        booked[i] = (when, "us")
+                    for i in drop:
+                        lines.append([when + dt.timedelta(seconds=40), who, phone, "NOT_INTERESTED", i, "declined this one"])
                 elif rng.random() < OPT:
                     lines.append([when, who, phone, "STOP", "", "asked to stop"])
                 elif answered:
@@ -199,45 +211,73 @@ try:
         clock = min(clock + dt.timedelta(minutes=CYCLE), END)
         recalc(clock)
         d = S("DASHBOARD")
-        print(f"{clock:%H:%M}  in-24h={d.Range('B3').Value:.1%}  tries={d.Range('B14').Value:.0f}", flush=True)
+        print(f"{clock:%H:%M}  in-24h={d.Range('B3').Value:.1%}  tries={d.Range('B17').Value:.0f}", flush=True)
 
-    # read-out one minute after the deadline
+    # ---- read-out one minute after the deadline
     recalc(END + dt.timedelta(minutes=1))
-    d, lg = S("DASHBOARD"), S("LOG")
-    out = {"note": "Mechanics test. Candidate behaviour drawn from ASSUMED rates; the booking share is not evidence."}
-    out["dashboard"] = {str(d.Cells(r, 1).Value).strip(): d.Cells(r, 2).Value for r in list(range(6, 17)) + list(range(19, 28))}
-    out["dashboard"]["Scheduled within 24h (share)"] = d.Range("B3").Value
-    out["readout_used_planning_measured_n"] = {str(d.Cells(r, 1).Value): [d.Cells(r, c).Value for c in (2, 3, 4, 5)]
-                                               for r in range(31, 36)}
-    out["capacity_and_cost"] = {str(d.Cells(r, 1).Value).strip(): d.Cells(r, 2).Value
-                                for r in list(range(38, 41)) + list(range(45, 51)) + list(range(53, 64)) if d.Cells(r, 1).Value}
-    m = S("MESSAGES")
-    out["evening_message"] = {
-        "enabled": EVENING, "sent": stats["sent"], "template_A": stats["template_A"], "template_B": stats["template_B"],
-        "template_matches_partner_consent": stats["template_matches_consent"],
-        "template_B_rows_with_link": stats["template_B_has_link"],
-        "replied_yes": len(yes_phones), "replied_stop": len(stop_phones),
-        "stop_repliers_ever_listed": stats["stop_repliers_listed"],
-        "yes_label_shown_without_yes_reply": stats["yes_label_without_yes_reply"],
-        "yes_repliers_first_list_position": sorted(yes_first_position.values()),
-        "pilot_readout": [[m.Cells(r, c).Value for c in range(1, 9)] for r in (6, 7)],
-        "note": "Reply rates are invented; this checks that replies flow into the lists, not how many will reply.",
-    }
-    logv = lg.Range(lg.Cells(2, 1), lg.Cells(max(2, next_row - 1), 10)).Value2     # Value2: dates as serial numbers
+    dash = dashboard()
+    dv = S("DESK").Range("A2:AY601").Value
+    # DESK columns (0-based): L=11 unique, M=12 booked, AP=41 by us, AW=48 request ID, AX=49 by candidate after our link
+    sheet_booked = {r[48]: ("us" if r[41] == 1 else ("link" if r[49] == 1 else "self"))
+                    for r in dv if r[48] and r[11] == 1 and r[12] == 1}
+    after_link = lambda i, t: req[i]["phone"] in link_logged and link_logged[req[i]["phone"]] < t
+    bot_booked = {i: ("us" if how == "us" else ("link" if after_link(i, t) else "self"))
+                  for i, (t, how) in booked.items() if t <= END}
+    lg = S("LOG")
+    logv = lg.Range(lg.Cells(2, 1), lg.Cells(max(2, next_row - 1), 13)).Value2     # Value2: dates as serial numbers
     checks = collections.Counter(str(r[9]) for r in logv if r[3])
     per_person = collections.Counter(str(r[2]) for r in logv if r[7] == 1)
-    times = [dt.datetime(1899, 12, 30) + dt.timedelta(days=float(r[6])) for r in logv if r[7] == 1]
-    out["log"] = {
-        "lines": next_row - 2,
-        "intern_lines": stats["intern_lines"], "bot_tries": stats["tries"], "sheet_tries": sum(per_person.values()),
-        "intern_lines_per_try": round(stats["intern_lines"] / max(1, stats["tries"]), 3),
-        "conversations_needing_more_than_one_line": stats["multi_line_conversations"],
-        "check_column": dict(checks),
+    times = [EPOCH + dt.timedelta(days=float(r[6])) for r in logv if r[7] == 1]
+    errors = len(sheet_errors(wb))
+    mech = {
+        "every_log_line_checks_OK": dict(checks),
+        "requests_booked_in_sheet_equal_requests_the_bot_booked": sheet_booked.keys() == bot_booked.keys(),
+        "who_booked_matches_for_every_request": all(sheet_booked.get(i) == h for i, h in bot_booked.items()),
+        "requests_booked": len(bot_booked),
+        "sent_links_counted_as_bookings": sum(1 for i in sheet_booked if i not in bot_booked),
+        "list_showed_another_persons_request_ID": stats["listed_ids_not_this_persons"],
+        "list_showed_an_already_booked_request": stats["listed_ids_already_booked"],
+        "request_ID_problems_on_dashboard": dash.get("Request ID problems (missing, or used twice)"),
+        "sheet_tries_equal_bot_tries": sum(per_person.values()) == stats["tries"],
         "max_tries_per_person": max(per_person.values()) if per_person else 0,
         "tries_outside_10_to_21": sum(1 for t in times if not (10 <= t.hour < 21)),
+        "log_lines_per_conversation": round(stats["intern_lines"] / max(1, stats["tries"]), 3),
+        "formula_errors_after_day": errors,
     }
-    out["list_codes_shown"] = dict(codes_seen)
-    out["formula_errors_after_day"] = len(sheet_errors(wb))
+    if EVENING:
+        mech.update({
+            "evening_send_list_rows": stats["sent"],
+            "template_matches_partner_consent": f'{stats["template_matches_consent"]} of {stats["sent"]}',
+            "template_B_rows_with_link": f'{stats["template_B_has_link"]} of {stats["template_B"]}',
+            "STOP_repliers_ever_listed": stats["stop_repliers_listed"],
+            "YES_label_without_a_YES_reply": stats["yes_label_without_yes_reply"],
+            "YES_repliers_first_list_positions": sorted(yes_first_position.values()),
+        })
+    mech["ALL_PASS"] = bool(
+        list(checks) == ["OK"] and mech["requests_booked_in_sheet_equal_requests_the_bot_booked"]
+        and mech["who_booked_matches_for_every_request"] and mech["sent_links_counted_as_bookings"] == 0
+        and mech["list_showed_another_persons_request_ID"] == 0 and mech["list_showed_an_already_booked_request"] == 0
+        and mech["request_ID_problems_on_dashboard"] == 0 and mech["sheet_tries_equal_bot_tries"]
+        and mech["max_tries_per_person"] <= 3 and mech["tries_outside_10_to_21"] == 0 and errors == 0
+        and mech.get("STOP_repliers_ever_listed", 0) == 0 and mech.get("YES_label_without_a_YES_reply", 0) == 0)
+    sim = {k: dash.get(k) for k in (
+        "LIVE  Scheduled within 24h (share of all unique requests)", "Scheduled within 24h", "booked by an intern (BOOKED)",
+        "booked by the candidate after we sent a link", "booked by the candidate on their own",
+        "Links sent (SENT_LINK lines; not bookings)", "Tries made", "Expected share with today's staff",
+        "Best case with unlimited interns (3 tries each)", "Interns needed (same shift length as today)", "Verdict")}
+    rd = S("DASHBOARD").Range("A37:E41").Value
+    sim["planning_vs_measured (used, planning, measured, n)"] = {r[0]: list(r[1:]) for r in rd}
+    if EVENING:
+        m = S("MESSAGES")
+        sim["evening_pilot_readout (group, requests, scheduled, share, delivered, failed, YES, STOP)"] = \
+            [[m.Cells(r, c).Value for c in range(1, 9)] for r in (6, 7)]
+    out = {
+        "evidence_type": "SYNTHETIC DRY RUN on fake data. mechanics_checks are evidence that the sheet works; "
+                         "simulated outcomes come from ASSUMED candidate behaviour and are not evidence about real candidates.",
+        "evening_message": EVENING,
+        "mechanics_checks": mech,
+        "simulated_outcomes_NOT_evidence": sim,
+    }
     wb.Save()
 finally:
     wb.Close(False)

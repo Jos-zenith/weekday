@@ -1,136 +1,67 @@
 {
- "note": "Mechanics test. Candidate behaviour drawn from ASSUMED rates; the booking share is not evidence.",
- "dashboard": {
-  "Unique requests (the denominator for every share)": 500.0,
-  "Duplicate rows removed": 20.0,
-  "People": 426.0,
-  "Scheduled within 24h": 209.0,
-  "booked by an intern": 67.0,
-  "booked by the candidate": 142.0,
-  "Open now": 0.0,
-  "At risk (open, deadline within the urgent window)": 0.0,
-  "Tries made": 178.0,
-  "Requests booked per try (measured)": 0.37640449438202245,
-  "Intern minutes per interview booked": 11.955223880597014,
-  "Open": 0.0,
-  "Missed deadline: never tried": 214.0,
-  "Missed deadline: tried, not booked": 63.0,
-  "No reply after max tries": 0.0,
-  "Bad contact details": 11.0,
-  "Stopped / wrong number": 3.0,
-  "Not interested": 0.0,
-  "Partner has no slots": 0.0,
-  "Scheduled late": 0.0,
-  "Scheduled within 24h (share)": 0.418
- },
- "readout_used_planning_measured_n": {
-  "Minutes per try": [
-   5.348403813351814,
-   4.5,
-   5.348403813351814,
-   178.0
-  ],
-  "Try 1: share where the person said yes": [
-   0.4608695652173913,
-   0.45,
-   0.4608695652173913,
-   115.0
-  ],
-  "Try 2: share where the person said yes": [
-   0.42592592592592593,
-   0.315,
-   0.42592592592592593,
-   54.0
-  ],
-  "Try 3: share where the person said yes": [
-   0.22049999999999997,
-   0.22049999999999997,
-   0.1111111111111111,
-   9.0
-  ],
-  "Share of requests candidates booked themselves": [
-   0.284,
-   0.25,
-   0.284,
-   500.0
-  ]
- },
- "capacity_and_cost": {
-  "Intern minutes before the deadline (Ram + Shyam)": 950.9999999951104,
-  "Tries today's staff can make": 177.0,
-  "People to reach by phone (not self-booked, contacts usable)": 298.30564799999996,
-  "Expected share with today's staff": 0.47548805878750766,
-  "Best case with unlimited interns (3 tries each)": 0.8153090542106279,
-  "People interns must book to hit the target": 219.81600000000003,
-  "Tries needed": 521.8804637799996,
-  "Interns needed (same shift length as today)": 6.0,
-  "Verdict": "Reachable with about 6 interns on today's shifts (best case 82%)",
-  "Cost of one intern-day (Rs)": 909.0909090909091,
-  "Cost per try (Rs)": 10.272213662044171,
-  "Expected value of one scheduled interview to Weekday (Rs)": 8100.0,
-  "Cost per interview from a first try (Rs)": 18.990028200133732,
-  "Cost per interview from a third try (Rs): what the last extra intern buys": 39.69127455810265,
-  "Extra tries still pay if at least 1 in N books. N =": 925.0,
-  "Hire rate at which third tries stop paying": 0.00014700472058556537,
-  "Gap to target today (requests)": 191.0,
-  "Revenue at risk from the gap, per day (Rs)": 386775.0,
-  "Extra interns needed, cost per day (Rs)": 3636.3636363636365,
-  "Evening WhatsApp to everyone, 2 messages, cost per day (Rs)": "Rs 102 - 733"
- },
- "evening_message": {
-  "enabled": false,
-  "sent": 0,
-  "template_A": 0,
-  "template_B": 0,
-  "template_matches_partner_consent": 0,
-  "template_B_rows_with_link": 0,
-  "replied_yes": 0,
-  "replied_stop": 0,
-  "stop_repliers_ever_listed": 0,
-  "yes_label_shown_without_yes_reply": 0,
-  "yes_repliers_first_list_position": [],
-  "pilot_readout": [
-   [
-    "SEND",
-    246.0,
-    111.0,
-    0.45121951219512196,
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   [
-    "HOLD",
-    254.0,
-    98.0,
-    0.3858267716535433,
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ]
-  ],
-  "note": "Reply rates are invented; this checks that replies flow into the lists, not how many will reply."
- },
- "log": {
-  "lines": 331,
-  "intern_lines": 182,
-  "bot_tries": 178,
-  "sheet_tries": 178,
-  "intern_lines_per_try": 1.022,
-  "conversations_needing_more_than_one_line": 4,
-  "check_column": {
-   "OK": 331
+ "evidence_type": "SYNTHETIC DRY RUN on fake data. mechanics_checks are evidence that the sheet works; simulated outcomes come from ASSUMED candidate behaviour and are not evidence about real candidates.",
+ "evening_message": false,
+ "mechanics_checks": {
+  "every_log_line_checks_OK": {
+   "OK": 330
   },
+  "requests_booked_in_sheet_equal_requests_the_bot_booked": true,
+  "who_booked_matches_for_every_request": true,
+  "requests_booked": 198,
+  "sent_links_counted_as_bookings": 0,
+  "list_showed_another_persons_request_ID": 0,
+  "list_showed_an_already_booked_request": 0,
+  "request_ID_problems_on_dashboard": 0.0,
+  "sheet_tries_equal_bot_tries": true,
   "max_tries_per_person": 3,
-  "tries_outside_10_to_21": 0
+  "tries_outside_10_to_21": 0,
+  "log_lines_per_conversation": 1.056,
+  "formula_errors_after_day": 0,
+  "ALL_PASS": true
  },
- "list_codes_shown": {
-  "T1": 142,
-  "T2": 56,
-  "T3": 9,
-  "CHK": 3
- },
- "formula_errors_after_day": 0
+ "simulated_outcomes_NOT_evidence": {
+  "LIVE  Scheduled within 24h (share of all unique requests)": 0.396,
+  "Scheduled within 24h": 198.0,
+  "booked by an intern (BOOKED)": 55.0,
+  "booked by the candidate after we sent a link": 17.0,
+  "booked by the candidate on their own": 126.0,
+  "Links sent (SENT_LINK lines; not bookings)": 32.0,
+  "Tries made": 177.0,
+  "Expected share with today's staff": 0.4108936132518381,
+  "Best case with unlimited interns (3 tries each)": 0.7285911589069616,
+  "Interns needed (same shift length as today)": "-",
+  "Verdict": "Not reachable with 3 tries each, even with unlimited interns (best case 73%). Raise self-booking (evening message pilot, MESSAGES), make later tries work (evening retries), or agree a different target with Weekday using these numbers.",
+  "planning_vs_measured (used, planning, measured, n)": {
+   "Minutes per try": [
+    5.41454953198055,
+    4.5,
+    5.41454953198055,
+    177.0
+   ],
+   "Try 1: share ending in a confirmed booking": [
+    0.3867924528301887,
+    0.4,
+    0.3867924528301887,
+    106.0
+   ],
+   "Try 2: share ending in a confirmed booking": [
+    0.29310344827586204,
+    0.27999999999999997,
+    0.29310344827586204,
+    58.0
+   ],
+   "Try 3: share ending in a confirmed booking": [
+    0.19599999999999998,
+    0.19599999999999998,
+    0.38461538461538464,
+    13.0
+   ],
+   "Share of requests candidates book on their own": [
+    0.252,
+    0.25,
+    0.252,
+    500.0
+   ]
+  }
+ }
 }

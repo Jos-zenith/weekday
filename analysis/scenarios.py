@@ -5,7 +5,8 @@ checked by hand. Usage: python analysis/scenarios.py  (writes analysis/scenarios
 Model of one evening batch worked the next day:
   * P people (R requests). A share `s` of people book by themselves (helped by the evening message) and need no try.
   * Everyone else with valid contacts gets try 1, then try 2 if not booked, then try 3 (max 3).
-  * Try k books a person with probability b1 * d**(k-1): `d` says how fast later tries lose power (d=1: no loss).
+  * Try k ends in a CONFIRMED booking with probability b1 * d**(k-1) (booked by us, or by the candidate after our link;
+    a link sent is not a booking). `d` says how fast later tries lose power (d=1: no loss).
   * Interns supply tries in order: all first tries, then second tries, then third (best tries first).
   * Requests booked = people booked x requests per person.
 The three inputs that decide the outcome (s, b1, d) are all measured on day 1 by the DASHBOARD.
@@ -54,7 +55,7 @@ def interns_needed(s, b1, d):
 
 
 S = [0.15, 0.25, 0.40]          # share of people who book alone (evening message pushes this up)
-B1 = [0.35, 0.45]               # first-try booking rate
+B1 = [0.30, 0.40]               # first-try confirmed-booking rate (planning value 0.40)
 D = [1.0, 0.7, 0.4]             # later-try decay
 rows = []
 for s, b1, d in itertools.product(S, B1, D):
@@ -62,7 +63,7 @@ for s, b1, d in itertools.product(S, B1, D):
                      four=round(outcome(4, s, b1, d)[0], 3), six=round(outcome(6, s, b1, d)[0], 3),
                      ceiling=round(ceiling(s, b1, d), 3), interns_for_80=interns_needed(s, b1, d)))
 
-print("Share scheduled within 24h (people). s = self-book share, b1 = try-1 booking rate, d = later-try decay")
+print("Share scheduled within 24h (people). s = self-book share, b1 = try-1 confirmed-booking rate, d = later-try decay")
 print(f"{'s':>5} {'b1':>5} {'d':>4} | {'2 int':>6} {'4 int':>6} {'6 int':>6} | {'ceiling':>7} | interns for 80%")
 for r in rows:
     print(f"{r['s']:5.0%} {r['b1']:5.2f} {r['d']:4.1f} | {r['two_interns']:6.0%} {r['four']:6.0%} {r['six']:6.0%} | "
