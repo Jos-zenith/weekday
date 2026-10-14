@@ -1,17 +1,17 @@
 """
-SYNTHETIC DRY RUN: drive the workbook through one simulated working day (14 Oct 10:00 -> deadline 19:51).
+Dry run: plays one full working day (14 Oct, 10:00 to the 19:51 deadline) through the workbook.
 
-A bot plays Ram and Shyam. It reads ONLY what the RAM / SHYAM tabs show, follows column G, and writes LOG lines
-exactly as START HERE tells an intern to, naming request IDs whenever an answer covers only some of a person's
-requests. Candidate behaviour comes from hidden truth (tests/output/truth.json), drawn at random from the analysis
-model's ASSUMED rates.
+A small bot stands in for Ram and Shyam. It only looks at what their tabs show, does what column G says, and writes
+LOG lines the way START HERE asks, with request IDs when an answer only covers some of a person's requests. How each
+candidate behaves comes from tests/results/demo-candidates.json, which the simulation drew from assumed rates.
 
-Two kinds of output, kept apart in the result file:
-  * mechanics_checks: pass/fail tests of the sheet (evidence that the sheet works on synthetic data);
-  * simulated_outcomes_NOT_evidence: booking shares produced by assumed behaviour (not evidence about real candidates).
+The result file has two parts that shouldn't be mixed up:
+- mechanics_checks: pass/fail checks that the sheet does what it should. These are the point of the exercise.
+- simulated_outcomes: booking shares produced by assumed behaviour. Fine as a sanity check, but they say nothing
+  about real candidates.
 
-Usage: python tests/dry_run.py [workbook]   (default: Weekday_Scheduling_Desk.xlsx; writes tests/output/)
-       EVENING_MSG=0 python tests/dry_run.py   runs the day without the evening WhatsApp pilot
+Run: python tests/dry_run.py [workbook]      (writes to tests/results/)
+     EVENING_MSG=0 python tests/dry_run.py   same day without the evening WhatsApp
 """
 import collections
 import datetime as dt
@@ -26,25 +26,25 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, "analysis"))
-import sim2  # noqa: E402
+import simulation  # noqa: E402
 from excel import open_excel, sheet_errors  # noqa: E402
 
-SRC = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "Weekday_Scheduling_Desk.xlsx"))
-OUTD = os.path.join(HERE, "output")
+SRC = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "Weekday Scheduling Desk.xlsx"))
+OUTD = os.path.join(HERE, "results")
 EVENING = os.environ.get("EVENING_MSG", "1") == "1"
-TAG = "" if EVENING else "_no_message"
-DST = os.path.join(OUTD, f"dry_run_day1{TAG}.xlsx")
+TAG = "" if EVENING else "-no-whatsapp"
+DST = os.path.join(OUTD, f"dry-run{TAG}.xlsx")
 shutil.copyfile(SRC, DST)
 
-truth = json.load(open(os.path.join(OUTD, "truth.json")))
+truth = json.load(open(os.path.join(OUTD, "demo-candidates.json")))
 DAY0 = dt.datetime.fromisoformat(truth["day0"])
 cls = {p: v["cls"] for p, v in truth["cand"].items()}
 consent = truth["consent"]
 req = {r["id"]: r for r in truth["req"]}                       # canonical request ID -> phone, company, round, self_min
-ANS = np.array(sim2.BASE["ans_p"])
-CONV, EXTRA, OPT = sim2.BASE["conv_p"], sim2.BASE["extra_conv"], sim2.BASE["opt_p"]
-P_LINK, LINK_DELAY = 0.6, (15, 180)        # ASSUMED: share who book after we send a link, and how long they take
-REPLY_YES = [0.35, 0.15, 0.03]             # INVENTED: evening reply YES (template A) / book from link (template B), by class
+ANS = np.array(simulation.BASE["ans_p"])
+CONV, EXTRA, OPT = simulation.BASE["conv_p"], simulation.BASE["extra_conv"], simulation.BASE["opt_p"]
+P_LINK, LINK_DELAY = 0.6, (15, 180)        # assumed: share who book after we send a link, and how long they take
+REPLY_YES = [0.35, 0.15, 0.03]             # made up for the test: evening YES reply / booking from the link, by class
 REPLY_STOP = 0.01
 rng = np.random.default_rng(424242)
 
@@ -176,7 +176,7 @@ try:
                 when = DAY0 + dt.timedelta(minutes=t_local)
                 stats["tries"] += 1
                 n_before = len(lines)
-                answered = replied_yes or rng.random() < min(1.0, ANS[cls[phone]] * sim2.tod_factor(t_local))
+                answered = replied_yes or rng.random() < min(1.0, ANS[cls[phone]] * simulation.tod_factor(t_local))
                 if replied_yes or (answered and rng.random() < CONV):
                     keep = [i for j, i in enumerate(items) if j == 0 or rng.random() < EXTRA]
                     drop = [i for i in items if i not in keep]
@@ -272,15 +272,15 @@ try:
         sim["evening_pilot_readout (group, requests, scheduled, share, delivered, failed, YES, STOP)"] = \
             [[m.Cells(r, c).Value for c in range(1, 9)] for r in (6, 7)]
     out = {
-        "evidence_type": "SYNTHETIC DRY RUN on fake data. mechanics_checks are evidence that the sheet works; "
-                         "simulated outcomes come from ASSUMED candidate behaviour and are not evidence about real candidates.",
+        "evidence_type": "Synthetic dry run on made-up data. mechanics_checks show whether the sheet works. "
+                         "simulated_outcomes come from assumed candidate behaviour, so they say nothing about real candidates.",
         "evening_message": EVENING,
         "mechanics_checks": mech,
-        "simulated_outcomes_NOT_evidence": sim,
+        "simulated_outcomes": sim,
     }
     wb.Save()
 finally:
     wb.Close(False)
     xl.Quit()
-json.dump(out, open(os.path.join(OUTD, f"dry_run_result{TAG}.json"), "w"), indent=1, default=str)
+json.dump(out, open(os.path.join(OUTD, f"dry-run{TAG}.json"), "w"), indent=1, default=str)
 print(json.dumps(out, indent=1, default=str))

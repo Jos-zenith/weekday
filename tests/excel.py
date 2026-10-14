@@ -1,4 +1,4 @@
-"""Excel COM helpers. DispatchEx starts a private Excel process, so a workbook the user has open is never touched."""
+"""Small Excel helpers. DispatchEx starts a separate Excel, so whatever is already open is left alone."""
 import win32com.client as w
 
 

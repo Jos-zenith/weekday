@@ -1,22 +1,21 @@
 """
-sim2.py - v2 of the scheduling-desk simulation, rebuilt to answer the review points:
+Simulation of a day at the scheduling desk (second version).
 
-  * explicit operating rules: arrival time, when the first auto-touch goes, whether candidates
-    self-schedule overnight (they do NOT: only in an awake window), when interns work, and how
-    each request's 24h deadline is computed (arrival + 24h, per request).
-  * a real request key = (candidate, company, round, requisition). Records with the same key are
-    true duplicates and are removed for EVERY policy (data hygiene, not a "policy"). The same
-    candidate with two different companies is two legitimate requests and is kept.
-  * a single consistent denominator for the headline KPI: all unique requests, including those
-    that are impossible (invalid contact details). A "reachable only" KPI is reported separately.
-  * "low-reach" candidates are a probabilistic subgroup (answer 12% per touch), not impossible.
-    Truly impossible = invalid contact details only. The ceiling is MEASURED (unlimited interns),
-    not asserted.
-  * candidate batching (one conversation, one separate booking per company) costs extra minutes
-    and can fail per booking; it is not free.
-  * opt-outs and contact attempts are tracked.
-  * a candidate-clustered, partner-stratified within-day randomized trial is simulated to size the
-    pilot.
+What it models:
+- Requests land in one batch around 19:51 and the first automated message goes out straight away. Candidates only
+  act between 07:00 and 23:00, so nobody self-books overnight. Interns work 10-18 and 12-20. Each request's
+  deadline is its own arrival time + 24h.
+- A request is (candidate, company, round, requisition). The same key twice is a partner re-sending a record and is
+  dropped before any policy runs. The same candidate at two companies is two real requests.
+- One denominator for the headline: all unique requests, including ones with bad contact details. A "reachable only"
+  figure is reported separately.
+- "Low-reach" candidates are just hard to reach (12% pick-up per try), not impossible. Only bad contact details are
+  impossible. The ceiling comes out of a run with unlimited interns rather than being assumed.
+- Booking several companies in one conversation costs extra minutes, and each booking can still fail.
+- Opt-outs and attempts are counted.
+- There is also a within-day randomised trial (by candidate, stratified by partner) for sizing a pilot.
+
+In this folder it is only used to generate the demo data and the dry run's hidden truth.
 """
 import json
 import math
@@ -453,6 +452,6 @@ if __name__ == "__main__":
         medt_fcfs=float(col(0, "med_t").mean()), medt_comp=float(col(1, "med_t").mean()),
     )
     out["meta"] = dict(reps=reps, sreps=sreps, base=BASE, label=LABEL)
-    with open(__file__.replace("sim2.py", "results2.json"), "w") as f:
+    with open(__file__.replace("simulation.py", "simulation_results.json"), "w") as f:
         json.dump(out, f, indent=1)
     print(f"saved {time.time()-t0:.0f}s", flush=True)

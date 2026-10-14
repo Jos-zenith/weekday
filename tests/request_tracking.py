@@ -1,10 +1,11 @@
 """
-Request-level tracking test. Usage: python tests/test_request_tracking.py [workbook]
+Does every request keep its ID from INPUT all the way to the booking?
+Run: python tests/request_tracking.py [workbook]
 
-Loads hand-made requests into a copy of the workbook, writes LOG lines in stages exactly as interns would, recalculates
-in Excel and checks every request ID. Cases: repeated rounds at one company, one candidate with three requests,
-same company and round with two interviewers, a re-sent duplicate, a link that turns into a booking later, an
-explicit-ID line beating a blank line, wrong IDs, NO_SLOTS by request ID, and an ID used twice in INPUT.
+Loads a handful of hand-made requests into a copy of the workbook, writes LOG lines in stages the way an intern
+would, recalculates in Excel and checks every request. Cases covered: Round 1 and Round 2 at the same company, one
+candidate with three requests, same company and round with two interviewers, a partner re-sending a record, a link
+that turns into a booking later, an ID line beating a blank line, wrong IDs, NO_SLOTS by ID, and an ID typed twice.
 """
 import datetime as dt
 import os
@@ -17,8 +18,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from excel import open_excel, sheet_errors  # noqa: E402
 
-SRC = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "..", "Weekday_Scheduling_Desk.xlsx"))
-DST = os.path.join(HERE, "output", "request_tracking_test.xlsx")
+SRC = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "..", "Weekday Scheduling Desk.xlsx"))
+DST = os.path.join(HERE, "results", "request-tracking.xlsx")
 shutil.copyfile(SRC, DST)
 
 EPOCH = dt.datetime(1899, 12, 30)

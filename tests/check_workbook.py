@@ -1,11 +1,11 @@
 """
-Static + recalculated checks on the workbook. Usage: python tests/check_workbook.py [path]
+Sanity checks on the workbook. Run: python tests/check_workbook.py [path]
 
-1. Google Sheets audit: every function used exists in Sheets; conditional formats do not point at other tabs
-   (Sheets rejects that); no array-entered formulas.
-2. Script audit: no message promises a held or released slot.
-3. Excel recalculation (separate Excel process): zero formula errors; every queue message has no unfilled
-   {FIELD}; every pre-filled WhatsApp link fits Excel's 255-character HYPERLINK limit.
+1. Will it work in Google Sheets? Every function used has to exist there, and no conditional format may point at
+   another tab (Sheets doesn't allow that).
+2. No message promises a held slot.
+3. Recalculate in Excel (in its own process): no formula errors, no unfilled {FIELD} in any message, and every
+   pre-filled WhatsApp link fits in 255 characters.
 """
 import os
 import re
@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from excel import open_excel, sheet_errors  # noqa: E402
 
 PATH = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else
-                       os.path.join(os.path.dirname(__file__), "..", "Weekday_Scheduling_Desk.xlsx"))
+                       os.path.join(os.path.dirname(__file__), "..", "Weekday Scheduling Desk.xlsx"))
 
 # Functions Google Sheets supports (subset relevant here; checked against the Sheets function list).
 SHEETS_OK = {"IF", "IFERROR", "AND", "OR", "NOT", "INDEX", "MATCH", "VLOOKUP", "COUNTIF", "COUNTIFS", "SUMIFS", "SUM",

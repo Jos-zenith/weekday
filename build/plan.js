@@ -1,4 +1,4 @@
-// Builds Weekday_Scheduling_Desk_Plan.docx (A4). Run from the repo root: node src/build_plan.js
+// Builds Weekday Scheduling Plan.docx (A4). Run from the repo root: node build/plan.js
 const fs = require("fs");
 const path = require("path");
 const {
@@ -6,7 +6,7 @@ const {
   AlignmentType, LevelFormat, HeadingLevel, Footer, PageNumber,
 } = require("docx");
 
-const OUT = path.join(__dirname, "..", "Weekday_Scheduling_Desk_Plan.docx");
+const OUT = path.join(__dirname, "..", "Weekday Scheduling Plan.docx");
 const FONT = "Arial";
 const W = 10466; // A4 width 11906 - 2 x 720 margins
 const NAVY = "1F3864", GREY = "595959", AMBER = "FFF2CC";
@@ -137,7 +137,7 @@ const doc = new Document({
       h1("4. What the interns do"),
       bullet([b("Their list: "), run("one row per person, best first. Each request on the row shows its ID (R001...), with one instruction, a WhatsApp link with the message typed in, and the partner's booking link.")]),
       bullet([b("One log line per conversation: "), run("time, name, phone, outcome. A blank request ID covers all of the person's open requests. A second line, naming the ID, is needed only when the answers differ by request.")]),
-      bullet([b("Honest messages and consent: "), run("no held-slot promises. Interns book in the partner's live calendar only where the partner agreed; otherwise they send the partner's link and check later.")]),
+      bullet([b("No false promises, and consent first: "), run("no held-slot promises. Interns book in the partner's live calendar only where the partner agreed; otherwise they send the partner's link and check later.")]),
 
       h1("5. Supporting detail [E]: evening WhatsApp, costs, sensitivity"),
       para([b("Evening WhatsApp (untested). "), run("Built: a lead-only MESSAGES tab with template texts and a send list that stays empty until candidate opt-in is confirmed. Candidates are split SEND/HOLD for an A/B pilot. The provider's report is pasted back in: YES moves a person up an intern's list (it is not a booking), STOP closes them. Not built: any automatic link to the WhatsApp API. Before the first send it needs a provider account, Meta-approved templates and confirmed opt-in. Cost: Rs 100-750 a day, depending on how Meta classes the template. Pilot: 3 days, about 750 requests per group, with a bar of SEND at least 8 points above HOLD.")]),
@@ -145,11 +145,11 @@ const doc = new Document({
 
       h1("6. Gates before calling it production-ready, and test status [D]"),
       table([3000, 7466], ["Item", "Status"], [
-        ["Request tracking", "29 of 29 scenario checks pass (tests/test_request_tracking.py). Covered: Round 1 and Round 2 at one company, three requests from one candidate, same company and round with two interviewers, a re-sent duplicate, a link that later converts, an explicit ID beating a blank line, wrong IDs flagged, NO_SLOTS by ID, and an ID used twice."],
+        ["Request tracking", "29 of 29 scenario checks pass (tests/request_tracking.py). Covered: Round 1 and Round 2 at one company, three requests from one candidate, same company and round with two interviewers, a re-sent duplicate, a link that later converts, an explicit ID beating a blank line, wrong IDs flagged, NO_SLOTS by ID, and an ID used twice."],
         ["Simulated day (two runs)", "Every check passes. The requests the sheet shows as booked exactly match the requests the bot booked (198 and 244), with the right split between intern bookings and candidate bookings. No sent link was counted as a booking. Every log line checks OK, 0 formula errors, at most 3 tries per person, no contact outside 10:00-21:00, about 1.06 log lines per conversation."],
         ["Dashboard model vs simulated day [C]", "41% expected vs 40% delivered without the message; 50% vs 49% with it. Close, but both sides rest on the same assumed rates."],
         ["30-minute usability test", "Not run. Pass: 9 of 10 log lines right, at most 2 questions per person, under 6 minutes per try."],
-        ["Google Sheets acceptance", "Not run. 11 checks in tests/SHEETS_ACCEPTANCE.md. Every function used exists in Sheets."],
+        ["Google Sheets acceptance", "Not run. 11 checks in tests/google-sheets-checklist.md. Every function used exists in Sheets."],
         ["One controlled live day", "After the two tests above. This produces the first tier-F numbers."],
       ]),
     ],

@@ -1,15 +1,15 @@
 """
-Path-to-80% scenarios and cost sensitivity. Deterministic arithmetic, no simulation, so every number can be
-checked by hand. Usage: python analysis/scenarios.py  (writes analysis/scenarios.json)
+How far can the desk get, and what would 80% take? Plain arithmetic with no randomness, so any number can be checked
+by hand. Run: python analysis/scenarios.py  (writes analysis/scenarios.json)
 
-Model of one evening batch worked the next day:
-  * P people (R requests). A share `s` of people book by themselves (helped by the evening message) and need no try.
-  * Everyone else with valid contacts gets try 1, then try 2 if not booked, then try 3 (max 3).
-  * Try k ends in a CONFIRMED booking with probability b1 * d**(k-1) (booked by us, or by the candidate after our link;
-    a link sent is not a booking). `d` says how fast later tries lose power (d=1: no loss).
-  * Interns supply tries in order: all first tries, then second tries, then third (best tries first).
-  * Requests booked = people booked x requests per person.
-The three inputs that decide the outcome (s, b1, d) are all measured on day 1 by the DASHBOARD.
+For one evening batch worked the next day:
+- a share s of people book on their own (the evening message should push this up) and never need a call;
+- everyone else with usable contacts gets up to three tries, in order;
+- try k ends in a confirmed booking with probability b1 * d**(k-1). Confirmed means we booked it, or they booked
+  after we sent the link. Sending the link on its own doesn't count. d is how much each later try keeps (1 = all);
+- interns spend their tries on all first tries, then second tries, then third tries;
+- requests booked = people booked x requests per person.
+s, b1 and d are exactly what the dashboard measures in the first two days, so real numbers replace this table fast.
 """
 import itertools
 import json

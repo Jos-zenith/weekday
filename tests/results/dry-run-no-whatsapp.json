@@ -1,5 +1,5 @@
 {
- "evidence_type": "SYNTHETIC DRY RUN on fake data. mechanics_checks are evidence that the sheet works; simulated outcomes come from ASSUMED candidate behaviour and are not evidence about real candidates.",
+ "evidence_type": "Synthetic dry run on made-up data. mechanics_checks show whether the sheet works. simulated_outcomes come from assumed candidate behaviour, so they say nothing about real candidates.",
  "evening_message": false,
  "mechanics_checks": {
   "every_log_line_checks_OK": {
@@ -19,7 +19,7 @@
   "formula_errors_after_day": 0,
   "ALL_PASS": true
  },
- "simulated_outcomes_NOT_evidence": {
+ "simulated_outcomes": {
   "LIVE  Scheduled within 24h (share of all unique requests)": 0.396,
   "Scheduled within 24h": 198.0,
   "booked by an intern (BOOKED)": 55.0,

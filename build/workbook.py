@@ -1,15 +1,15 @@
 """
-Builds Weekday_Scheduling_Desk.xlsx - the interns' scheduling sheet (also loads in Google Sheets).
+Builds Weekday Scheduling Desk.xlsx, the sheet Ram and Shyam work from. It also opens in Google Sheets.
 
-Design rules (from review):
-  * Interns see four tabs: START HERE, RAM, SHYAM, LOG. Everything else is the lead's.
-  * One LOG line per conversation. A second line is only needed when the answer differs by company.
-  * Messages never promise a held slot. We book for a candidate only where the partner said YES in PARTNERS;
-    otherwise we send the partner's own booking link. Slots are picked live in the partner's calendar.
-  * Every WhatsApp message is short enough for a pre-filled link (Excel's HYPERLINK limit is 255 characters).
+A few choices shape everything below:
+- Interns only need four tabs (START HERE, RAM, SHYAM, LOG). The rest is for whoever runs the desk.
+- One LOG line per conversation. A second line is only needed when someone says yes to one request and no to another.
+- We never promise a held slot. We book for a candidate only where the partner has agreed to that in PARTNERS;
+  otherwise we send the partner's own booking link.
+- WhatsApp messages stay short so the pre-filled link fits Excel's 255-character HYPERLINK limit.
 
-All logic is live formulas driven by INPUT (partner data), PARTNERS and LOG. Demo data is SYNTHETIC
-(example.com addresses, fake phone numbers), generated from the analysis model so the dry run has known truth.
+Everything is live formulas off INPUT, PARTNERS and LOG. The demo rows are made up (example.com addresses, fake
+numbers) and come from analysis/simulation.py, so the dry run knows how each candidate "really" behaves.
 """
 import datetime as dt
 import json
@@ -26,10 +26,10 @@ from openpyxl.worksheet.datavalidation import DataValidation
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(ROOT, "analysis"))
-import sim2  # noqa: E402
+import simulation  # noqa: E402
 
-OUT = os.environ.get("DESK_OUT", os.path.join(ROOT, "Weekday_Scheduling_Desk.xlsx"))
-TRUTH = os.path.join(ROOT, "tests", "output", "truth.json")
+OUT = os.environ.get("DESK_OUT", os.path.join(ROOT, "Weekday Scheduling Desk.xlsx"))
+TRUTH = os.path.join(ROOT, "tests", "results", "demo-candidates.json")
 NROWS = 600            # INPUT / DESK capacity (rows 2..601)
 LOGN = 2000            # LOG capacity (rows 2..2001); one sheet per daily batch
 NQ = 25                # rows shown on each intern's list
@@ -72,10 +72,10 @@ def section(ws, row, text, ncols=6):
 
 
 # ----------------------------------------------------------------------------------------------
-# 1. synthetic demo data from the analysis model (so the dry run has known truth)
+# demo data, generated from the simulation so the dry run knows each candidate's true behaviour
 # ----------------------------------------------------------------------------------------------
-cfg = {**sim2.BASE}
-world = sim2.make_world(np.random.default_rng(2026), cfg)
+cfg = {**simulation.BASE}
+world = simulation.make_world(np.random.default_rng(2026), cfg)
 rng = np.random.default_rng(7)
 n, nc = world["n"], world["nc"]
 FIRST = ["Aarav", "Diya", "Kabir", "Ananya", "Vihaan", "Ira", "Reyansh", "Meera", "Arjun", "Saanvi", "Rohan",
@@ -131,7 +131,7 @@ json.dump(dict(
     consent=consent, day0=DAY0.isoformat(), arrival_min=int(cfg["arrive_clock"]),
 ), open(TRUTH, "w"))
 
-# planning table: chance a try ends in a booking, by engagement signal x try number (only used to ORDER the list)
+# planning table: chance a try ends in a booking, by engagement signal x try number (only used to order the list)
 prior, sig_m = np.array(cfg["prior"]), np.array(cfg["sig"])
 ans, conv = np.array(cfg["ans_p"]), cfg["conv_p"]
 ptab = []
@@ -360,8 +360,8 @@ for r in range(2, LOGN + 2):
                     f'"OK"))))))))'))
     ws.cell(r, 11, f'=IF(E{r}="","",IFERROR(INDEX({DCO},MATCH(E{r},{DID},0)),""))')
     ws.cell(r, 12, f'=IF(OR(D{r}="",C{r}=""),"",COUNTIFS($C$2:C{r},C{r},$H$2:H{r},1))')
-    # a try is a success only if its conversation produced a booking: BOOKED by us, or a SELF_BOOKED that was actually
-    # logged after we sent the link. A link on its own is never a success.
+    # a try only counts as a success if that conversation ended in a booking: either we booked it, or the candidate
+    # booked after we sent the link and the lead logged it. A link by itself doesn't count.
     ws.cell(r, 13, (f'=IF(H{r}<>1,"",IF(COUNTIFS({L("C")},C{r},{L("L")},L{r},{L("D")},"BOOKED")>0,1,'
                     f'IF(AND(COUNTIFS({L("C")},C{r},{L("L")},L{r},{L("D")},"SENT_LINK")>0,'
                     f'COUNTIFS({L("C")},C{r},{L("D")},"SELF_BOOKED",{L("G")},">"&G{r})>0),1,0)))'))
@@ -415,7 +415,7 @@ for r in range(2, R + 1):
     w_["H"] = f'=IF(B{r}="","",INPUT!I{r})'
     w_["I"] = f'=IF(B{r}="","",IF(INPUT!J{r}="","None",INPUT!J{r}))'
     w_["J"] = f'=IF(B{r}="","",LOWER(E{r})&"|"&LOWER(B{r})&"|"&G{r}&"|"&LOWER(C{r}))'
-    # keep the EARLIEST copy of a duplicate (ties: first listed) so the 24h clock starts at the original request
+    # keep the earliest copy of a duplicate (ties: first listed) so the 24h clock starts at the original request
     w_["K"] = (f'=IF(B{r}="","",IF(SUMPRODUCT(({D_("J")}=J{r})*({D_("H")}<H{r}))'
                f'+SUMPRODUCT(($J$2:J{r}=J{r})*($H$2:H{r}=H{r}))-1>0,"DUPLICATE",'
                f'IF(AND(ISNUMBER(SEARCH("@",E{r})),ISNUMBER(SEARCH(".",E{r})),LEN(F{r})=10,ISNUMBER(VALUE(F{r}))),"OK","BAD CONTACT")))')
@@ -598,8 +598,8 @@ build_list("RAM", "Ram")
 build_list("SHYAM", "Shyam")
 
 # ---------------------------------------------------------------------------------- DASHBOARD (lead)
-# Every block says what kind of number it holds: LIVE (counted from LOG), PLANNING (an assumption in SETTINGS),
-# MODEL (arithmetic on those numbers) or COST (assumptions). A sent link is never counted as a booking.
+# each block is labelled with the kind of number it holds: LIVE (counted from LOG), PLANNING (an assumption in
+# SETTINGS), MODEL (arithmetic on those) or COST (assumptions). A sent link never counts as a booking.
 ws = S["DASHBOARD"]
 ws["A1"], ws["A1"].font = "DASHBOARD (lead). Everything updates live.", f_title
 ws["A2"] = ("Kinds of number: LIVE = counted from LOG.  PLANNING = an assumption in SETTINGS.  MODEL = arithmetic on the "
@@ -754,8 +754,8 @@ kv(69, "Evening WhatsApp to everyone, 2 messages, cost per day (Rs)",
    "Utility vs marketing rate (Meta decides). Plus the provider's monthly fee. Effect unknown until the MESSAGES pilot.")
 
 # ---------------------------------------------------------------------------------- MESSAGES (lead): evening WhatsApp pilot
-# Nothing here sends a message. The lead exports the send list to a WhatsApp Business provider, and pastes the provider's
-# delivery / reply report back in; DESK reads it (YES moves the person to the top of an intern's list, STOP closes them).
+# nothing here sends anything. The lead exports the send list to a WhatsApp Business provider and pastes the
+# provider's delivery/reply report back in. DESK reads it: YES moves the person up an intern's list, STOP closes them.
 ws = S["MESSAGES"]
 ws["A1"], ws["A1"].font = "MESSAGES (lead): evening WhatsApp through a provider. A PILOT, not a proven step.", f_title
 ws["A2"] = (f'=IF({SET["optin"]}<>"YES","DO NOT SEND. Candidates\' WhatsApp opt-in is not confirmed (SETTINGS B22), so the '
