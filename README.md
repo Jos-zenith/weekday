@@ -5,7 +5,7 @@ This is my take on the Weekday scheduling brief: around 500 interview requests l
 If you only open two files, make it these:
 
 - **`Weekday Scheduling Desk.xlsx`**: the sheet the interns work from. It ships with made-up demo data and a test clock set to 14 Oct, 10:00, so the lists are already filled when you open it.
-- **`Weekday Scheduling Plan.docx`**: the write-up, in 15 short sections that each open with a one-line point. It starts with the finding (two interns top out near 49% even if every call books), works through the assignment's parts (clarifying questions with assumptions in italics, the breakdown, options, workflow, the interns' to-do sheet, messages, edge cases, the no-show bonus, KPIs), and ends with the next six days and what I need from Weekday.
+- **`Weekday Scheduling Plan.pdf`**: the write-up, It starts with the finding (two interns top out near 49% even if every call books), works through the assignment's parts (clarifying questions with assumptions, the breakdown, options, workflow, the interns' to-do sheet, messages, edge cases and the no-show bonus, KPIs)
 
 ## The short version
 
@@ -19,49 +19,20 @@ Two interns can't reach 80% by phone. Before the deadline they have time for abo
 
 Every request gets an ID (R001, R002, ...) that follows it from the partner's sheet to the booking. A sent booking link never counts as a booking.
 
-## Where it stands
-
-It isn't ready for live use yet. Everything has been tested in Excel on made-up data, but two things still need real people:
-
-1. a 30-minute run with two people who have never seen the file, and
-2. the Google Sheets checklist in `tests/google-sheets-checklist.md`.
-
 ## What's in the folder
 
 | Path | What it is |
 |---|---|
-| `build/workbook.py` | Builds the workbook. Everything in it is live formulas. |
-| `build/plan.js` | Builds the plan document. |
 | `analysis/scenarios.py` | The "what would 80% take" table, the capacity ceiling and its outer bounds, the fee scenario and the cost sensitivity. One assumption set, plain arithmetic, every share a share of the 500 requests. The DASHBOARD MODEL block does the same arithmetic in formulas. |
 | `analysis/simulation.py` | A simulation of candidate behaviour. Here it only generates the demo data. |
-| `tests/check_workbook.py` | Google Sheets compatibility, message wording, formula errors and WhatsApp link lengths. |
 | `tests/request_tracking.py` | 29 checks that each request keeps its ID through repeated rounds, multiple requests per person, duplicates and partial answers. |
 | `tests/model_consistency.py` | Rebuilds the ceiling and its bounds from the raw demo batch, then checks the DASHBOARD model against `analysis/scenarios.py` on the same batch for seven scenarios, and reports any gap. |
 | `tests/dry_run.py` | A bot works one simulated day through the sheet. The pass/fail checks are what matter; the booking numbers it produces come from assumptions. |
-| `tests/google-sheets-checklist.md` | The checklist for the first run in Google Sheets. |
 | `archive/` | The workbook as it was before the dashboard moved to the request-level model (15 Oct). |
 | `tests/results/` | Results from the last test runs, including `demo-candidates.json` (how each made-up candidate behaves). |
-
-## Rebuilding and testing
-
-Needs Python with openpyxl, numpy and pywin32, Excel on Windows for the tests, and Node with the `docx` package for the plan.
-
-```
-python build/workbook.py
-python tests/check_workbook.py
-python tests/request_tracking.py
-python tests/model_consistency.py
-python tests/dry_run.py                  # with the evening WhatsApp
-EVENING_MSG=0 python tests/dry_run.py    # without it
-python analysis/scenarios.py
-node build/plan.js
-```
 
 ## Going live
 
 1. In SETTINGS, clear the test clock (B3). Until it's blank, a red TEST CLOCK warning shows on START HERE, RAM, SHYAM and DASHBOARD.
 2. In INPUT, delete the demo rows and paste the partner sheet into columns A-I. Column K gives each request its ID; paste the partner's own IDs over it if they have them. After interns start logging, only add rows at the bottom and don't sort.
 3. In PARTNERS, add each company's booking link. Only mark "We may book for candidates?" as YES once the partner has agreed in writing.
-4. Work through `tests/google-sheets-checklist.md`. Turn on "recalculate every minute" in Sheets and protect the lead tabs.
-5. Run the 30-minute test with two new people (plan, section 6).
-6. Keep the evening WhatsApp switched off (SETTINGS B22 = NO) until candidates have opted in, there's a provider account and the templates are approved (plan, section 5).
