@@ -117,7 +117,7 @@ def evening_message():
 
 def dashboard():
     """Column A label -> column B value, for every labelled row on DASHBOARD."""
-    v = S("DASHBOARD").Range("A1:E69").Value
+    v = S("DASHBOARD").Range("A1:E90").Value
     return {str(r[0]).strip(): r[1] for r in v if r[0]}
 
 
@@ -265,7 +265,7 @@ try:
         "booked by the candidate after we sent a link", "booked by the candidate on their own",
         "Links sent (SENT_LINK lines; not bookings)", "Tries made", "Expected share with today's staff",
         "Best case with unlimited interns (3 tries each)", "Interns needed (same shift length as today)", "Verdict")}
-    rd = S("DASHBOARD").Range("A37:E41").Value
+    rd = S("DASHBOARD").Range("A37:E42").Value
     sim["planning_vs_measured (used, planning, measured, n)"] = {r[0]: list(r[1:]) for r in rd}
     if EVENING:
         m = S("MESSAGES")

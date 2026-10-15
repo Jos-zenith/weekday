@@ -54,10 +54,10 @@
   "booked by the candidate on their own": 146.0,
   "Links sent (SENT_LINK lines; not bookings)": 30.0,
   "Tries made": 182.0,
-  "Expected share with today's staff": 0.5026856012105692,
-  "Best case with unlimited interns (3 tries each)": 0.8318941641394179,
+  "Expected share with today's staff": 0.5014214876033057,
+  "Best case with unlimited interns (3 tries each)": 0.8304220600790513,
   "Interns needed (same shift length as today)": 6.0,
-  "Verdict": "Reachable with about 6 interns on today's shifts (best case 83%)",
+  "Verdict": "If these rates hold, about 6 interns on today's shifts (best case 83%)",
   "planning_vs_measured (used, planning, measured, n)": {
    "Minutes per try": [
     5.23152043792652,
@@ -88,6 +88,12 @@
     0.25,
     0.292,
     500.0
+   ],
+   "Requests settled per successful call": [
+    1.1666666666666667,
+    1.1698564593301435,
+    1.1666666666666667,
+    84.0
    ]
   },
   "evening_pilot_readout (group, requests, scheduled, share, delivered, failed, YES, STOP)": [

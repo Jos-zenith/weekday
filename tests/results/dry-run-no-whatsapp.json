@@ -27,10 +27,10 @@
   "booked by the candidate on their own": 126.0,
   "Links sent (SENT_LINK lines; not bookings)": 32.0,
   "Tries made": 177.0,
-  "Expected share with today's staff": 0.4108936132518381,
-  "Best case with unlimited interns (3 tries each)": 0.7285911589069616,
+  "Expected share with today's staff": 0.4067169811320755,
+  "Best case with unlimited interns (3 tries each)": 0.7175918303782879,
   "Interns needed (same shift length as today)": "-",
-  "Verdict": "Not reachable with 3 tries each, even with unlimited interns (best case 73%). Raise self-booking (evening message pilot, MESSAGES), make later tries work (evening retries), or agree a different target with Weekday using these numbers.",
+  "Verdict": "Not reachable with 3 tries each, even with unlimited interns (best case 72%). Raise self-booking (evening message pilot, MESSAGES), make later tries work (evening retries), or agree a different target with Weekday using these numbers.",
   "planning_vs_measured (used, planning, measured, n)": {
    "Minutes per try": [
     5.41454953198055,
@@ -61,6 +61,12 @@
     0.25,
     0.252,
     500.0
+   ],
+   "Requests settled per successful call": [
+    1.1428571428571428,
+    1.1698564593301435,
+    1.1428571428571428,
+    63.0
    ]
   }
  }

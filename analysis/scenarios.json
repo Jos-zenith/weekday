@@ -1,42 +1,60 @@
 {
  "inputs": {
-  "P": 426,
   "R": 500,
-  "valid": 0.97,
+  "P": 426,
+  "people_reachable": 418,
+  "usable": {
+   "1": 356,
+   "2": 53,
+   "3": 9
+  },
+  "unusable": {
+   "1": 6,
+   "2": 1,
+   "3": 1
+  },
+  "per_success": 1.1699,
   "min_per_intern": 475,
   "min_per_try": 4.5,
   "target": 0.8,
-  "intern_day": 909
+  "intern_day": 909,
+  "lost": 0.25
+ },
+ "tries_two_interns": 211.1,
+ "ceiling_two": 0.494,
+ "bounds_two": {
+  "one_request_per_call": 0.422,
+  "most_requests_first": 0.564
  },
  "scenarios": [
   {
    "s": 0.15,
    "b1": 0.3,
    "d": 1.0,
-   "two_interns": 0.299,
-   "four": 0.447,
-   "six": 0.596,
-   "ceiling": 0.692,
+   "two_interns": 0.298,
+   "four": 0.446,
+   "six": 0.595,
+   "ceiling": 0.696,
    "interns_for_80": null
   },
   {
    "s": 0.15,
    "b1": 0.3,
    "d": 0.7,
-   "two_interns": 0.299,
+   "two_interns": 0.298,
    "four": 0.432,
-   "six": 0.531,
-   "ceiling": 0.586,
+   "six": 0.532,
+   "ceiling": 0.589,
    "interns_for_80": null
   },
   {
    "s": 0.15,
    "b1": 0.3,
    "d": 0.4,
-   "two_interns": 0.299,
-   "four": 0.417,
-   "six": 0.471,
-   "ceiling": 0.491,
+   "two_interns": 0.298,
+   "four": 0.418,
+   "six": 0.473,
+   "ceiling": 0.494,
    "interns_for_80": null
   },
   {
@@ -44,10 +62,10 @@
    "b1": 0.4,
    "d": 1.0,
    "two_interns": 0.348,
-   "four": 0.546,
-   "six": 0.745,
-   "ceiling": 0.796,
-   "interns_for_80": null
+   "four": 0.545,
+   "six": 0.743,
+   "ceiling": 0.802,
+   "interns_for_80": 7
   },
   {
    "s": 0.15,
@@ -55,8 +73,8 @@
    "d": 0.7,
    "two_interns": 0.348,
    "four": 0.526,
-   "six": 0.651,
-   "ceiling": 0.688,
+   "six": 0.652,
+   "ceiling": 0.693,
    "interns_for_80": null
   },
   {
@@ -64,39 +82,39 @@
    "b1": 0.4,
    "d": 0.4,
    "two_interns": 0.348,
-   "four": 0.506,
-   "six": 0.57,
-   "ceiling": 0.586,
+   "four": 0.508,
+   "six": 0.572,
+   "ceiling": 0.589,
    "interns_for_80": null
   },
   {
    "s": 0.25,
    "b1": 0.3,
    "d": 1.0,
-   "two_interns": 0.399,
-   "four": 0.547,
-   "six": 0.696,
-   "ceiling": 0.728,
+   "two_interns": 0.398,
+   "four": 0.546,
+   "six": 0.695,
+   "ceiling": 0.732,
    "interns_for_80": null
   },
   {
    "s": 0.25,
    "b1": 0.3,
    "d": 0.7,
-   "two_interns": 0.399,
-   "four": 0.524,
+   "two_interns": 0.398,
+   "four": 0.523,
    "six": 0.612,
-   "ceiling": 0.634,
+   "ceiling": 0.638,
    "interns_for_80": null
   },
   {
    "s": 0.25,
    "b1": 0.3,
    "d": 0.4,
-   "two_interns": 0.399,
-   "four": 0.5,
-   "six": 0.541,
-   "ceiling": 0.551,
+   "two_interns": 0.398,
+   "four": 0.501,
+   "six": 0.543,
+   "ceiling": 0.553,
    "interns_for_80": null
   },
   {
@@ -104,9 +122,9 @@
    "b1": 0.4,
    "d": 1.0,
    "two_interns": 0.448,
-   "four": 0.646,
-   "six": 0.82,
-   "ceiling": 0.82,
+   "four": 0.645,
+   "six": 0.825,
+   "ceiling": 0.825,
    "interns_for_80": 6
   },
   {
@@ -115,8 +133,8 @@
    "d": 0.7,
    "two_interns": 0.448,
    "four": 0.615,
-   "six": 0.725,
-   "ceiling": 0.725,
+   "six": 0.727,
+   "ceiling": 0.729,
    "interns_for_80": null
   },
   {
@@ -124,39 +142,39 @@
    "b1": 0.4,
    "d": 0.4,
    "two_interns": 0.448,
-   "four": 0.583,
-   "six": 0.631,
-   "ceiling": 0.634,
+   "four": 0.584,
+   "six": 0.634,
+   "ceiling": 0.637,
    "interns_for_80": null
   },
   {
    "s": 0.4,
    "b1": 0.3,
    "d": 1.0,
-   "two_interns": 0.549,
-   "four": 0.697,
-   "six": 0.782,
-   "ceiling": 0.782,
+   "two_interns": 0.548,
+   "four": 0.696,
+   "six": 0.786,
+   "ceiling": 0.786,
    "interns_for_80": null
   },
   {
    "s": 0.4,
    "b1": 0.3,
    "d": 0.7,
-   "two_interns": 0.549,
+   "two_interns": 0.548,
    "four": 0.66,
-   "six": 0.707,
-   "ceiling": 0.707,
+   "six": 0.71,
+   "ceiling": 0.71,
    "interns_for_80": null
   },
   {
    "s": 0.4,
    "b1": 0.3,
    "d": 0.4,
-   "two_interns": 0.549,
+   "two_interns": 0.548,
    "four": 0.624,
-   "six": 0.641,
-   "ceiling": 0.641,
+   "six": 0.643,
+   "ceiling": 0.643,
    "interns_for_80": null
   },
   {
@@ -164,9 +182,9 @@
    "b1": 0.4,
    "d": 1.0,
    "two_interns": 0.598,
-   "four": 0.796,
-   "six": 0.856,
-   "ceiling": 0.856,
+   "four": 0.795,
+   "six": 0.86,
+   "ceiling": 0.86,
    "interns_for_80": 5
   },
   {
@@ -174,9 +192,9 @@
    "b1": 0.4,
    "d": 0.7,
    "two_interns": 0.598,
-   "four": 0.742,
-   "six": 0.78,
-   "ceiling": 0.78,
+   "four": 0.743,
+   "six": 0.783,
+   "ceiling": 0.783,
    "interns_for_80": null
   },
   {
@@ -184,9 +202,9 @@
    "b1": 0.4,
    "d": 0.4,
    "two_interns": 0.598,
-   "four": 0.693,
-   "six": 0.707,
-   "ceiling": 0.707,
+   "four": 0.694,
+   "six": 0.71,
+   "ceiling": 0.71,
    "interns_for_80": null
   }
  ],
@@ -196,55 +214,79 @@
    "hire": 0.01,
    "ctc": 1200000,
    "value": 1800,
-   "breakeven_booking_per_try": 0.0041
+   "breakeven_booking_per_try": 0.00409
   },
   {
    "hire": 0.01,
    "ctc": 1800000,
    "value": 2700,
-   "breakeven_booking_per_try": 0.0027
+   "breakeven_booking_per_try": 0.00273
   },
   {
    "hire": 0.01,
    "ctc": 2400000,
    "value": 3600,
-   "breakeven_booking_per_try": 0.002
+   "breakeven_booking_per_try": 0.00204
   },
   {
    "hire": 0.03,
    "ctc": 1200000,
    "value": 5400,
-   "breakeven_booking_per_try": 0.0014
+   "breakeven_booking_per_try": 0.00136
   },
   {
    "hire": 0.03,
    "ctc": 1800000,
    "value": 8100,
-   "breakeven_booking_per_try": 0.0009
+   "breakeven_booking_per_try": 0.00091
   },
   {
    "hire": 0.03,
    "ctc": 2400000,
    "value": 10800,
-   "breakeven_booking_per_try": 0.0007
+   "breakeven_booking_per_try": 0.00068
   },
   {
    "hire": 0.05,
    "ctc": 1200000,
    "value": 9000,
-   "breakeven_booking_per_try": 0.0008
+   "breakeven_booking_per_try": 0.00082
   },
   {
    "hire": 0.05,
    "ctc": 1800000,
    "value": 13500,
-   "breakeven_booking_per_try": 0.0005
+   "breakeven_booking_per_try": 0.00055
   },
   {
    "hire": 0.05,
    "ctc": 2400000,
    "value": 18000,
-   "breakeven_booking_per_try": 0.0004
+   "breakeven_booking_per_try": 0.00041
   }
- ]
+ ],
+ "fees_at_risk": {
+  "two_intern_share": 0.448,
+  "gap_requests": 176,
+  "by_hire_rate": [
+   {
+    "hire": 0.01,
+    "value": 2700,
+    "if_quarter_lost": 118943,
+    "if_all_lost": 475773
+   },
+   {
+    "hire": 0.03,
+    "value": 8100,
+    "if_quarter_lost": 356830,
+    "if_all_lost": 1427318
+   },
+   {
+    "hire": 0.05,
+    "value": 13500,
+    "if_quarter_lost": 594716,
+    "if_all_lost": 2378864
+   }
+  ]
+ }
 }

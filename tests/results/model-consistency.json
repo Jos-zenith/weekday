@@ -1,0 +1,345 @@
+{
+ "ceiling": {
+  "unique_requests": 500,
+  "people": 426,
+  "reachable_people": 418,
+  "usable_mix": {
+   "1": 356,
+   "2": 53,
+   "3": 9
+  },
+  "unusable_mix": {
+   "1": 6,
+   "2": 1,
+   "3": 1
+  },
+  "mix_matches_scenarios_py": true,
+  "requests_per_successful_call": 1.1699,
+  "tries_available": 211.1,
+  "tries_used": 211.1,
+  "ceiling": 0.4939,
+  "outer_bound_one_request_per_call": 0.4222,
+  "outer_bound_most_requests_first": 0.5642,
+  "assumption": "Every try books and settles the batch average of requests per reachable person. Outer bounds: one request per call, or calls reaching the people with the most requests first and settling all of them."
+ },
+ "dashboard_vs_scenarios": [
+  {
+   "case": {
+    "no_call": 0.25,
+    "try1": 0.4,
+    "later_keep": 1.0
+   },
+   "inputs_read": {
+    "unique_requests": 500.0,
+    "reachable_people": 418.0,
+    "requests_per_successful_call": 1.1699,
+    "rates": [
+     0.4,
+     0.4,
+     0.4
+    ],
+    "tries": 211.0
+   },
+   "expected_today": {
+    "dashboard": 0.4475,
+    "scenarios_py": 0.4475
+   },
+   "best_case": {
+    "dashboard": 0.8251,
+    "scenarios_py": 0.8251
+   },
+   "interns_for_80": {
+    "dashboard": 6,
+    "scenarios_py": 6
+   },
+   "ceiling": {
+    "dashboard": 0.4937,
+    "scenarios_py": 0.4937
+   },
+   "bound_most_first": {
+    "dashboard": 0.564,
+    "scenarios_py": 0.564
+   },
+   "bound_one_per_call": {
+    "dashboard": 0.422,
+    "scenarios_py": 0.422
+   },
+   "max_gap_points": 0.0,
+   "match": true
+  },
+  {
+   "case": {
+    "no_call": 0.25,
+    "try1": 0.4,
+    "later_keep": 0.7
+   },
+   "inputs_read": {
+    "unique_requests": 500.0,
+    "reachable_people": 418.0,
+    "requests_per_successful_call": 1.1699,
+    "rates": [
+     0.4,
+     0.28,
+     0.196
+    ],
+    "tries": 211.0
+   },
+   "expected_today": {
+    "dashboard": 0.4475,
+    "scenarios_py": 0.4475
+   },
+   "best_case": {
+    "dashboard": 0.7287,
+    "scenarios_py": 0.7287
+   },
+   "interns_for_80": {
+    "dashboard": null,
+    "scenarios_py": null
+   },
+   "ceiling": {
+    "dashboard": 0.4937,
+    "scenarios_py": 0.4937
+   },
+   "bound_most_first": {
+    "dashboard": 0.564,
+    "scenarios_py": 0.564
+   },
+   "bound_one_per_call": {
+    "dashboard": 0.422,
+    "scenarios_py": 0.422
+   },
+   "max_gap_points": 0.0,
+   "match": true
+  },
+  {
+   "case": {
+    "no_call": 0.25,
+    "try1": 0.4,
+    "later_keep": 0.4
+   },
+   "inputs_read": {
+    "unique_requests": 500.0,
+    "reachable_people": 418.0,
+    "requests_per_successful_call": 1.1699,
+    "rates": [
+     0.4,
+     0.16,
+     0.064
+    ],
+    "tries": 211.0
+   },
+   "expected_today": {
+    "dashboard": 0.4475,
+    "scenarios_py": 0.4475
+   },
+   "best_case": {
+    "dashboard": 0.6375,
+    "scenarios_py": 0.6375
+   },
+   "interns_for_80": {
+    "dashboard": null,
+    "scenarios_py": null
+   },
+   "ceiling": {
+    "dashboard": 0.4937,
+    "scenarios_py": 0.4937
+   },
+   "bound_most_first": {
+    "dashboard": 0.564,
+    "scenarios_py": 0.564
+   },
+   "bound_one_per_call": {
+    "dashboard": 0.422,
+    "scenarios_py": 0.422
+   },
+   "max_gap_points": 0.0,
+   "match": true
+  },
+  {
+   "case": {
+    "no_call": 0.4,
+    "try1": 0.4,
+    "later_keep": 1.0
+   },
+   "inputs_read": {
+    "unique_requests": 500.0,
+    "reachable_people": 418.0,
+    "requests_per_successful_call": 1.1699,
+    "rates": [
+     0.4,
+     0.4,
+     0.4
+    ],
+    "tries": 211.0
+   },
+   "expected_today": {
+    "dashboard": 0.5975,
+    "scenarios_py": 0.5975
+   },
+   "best_case": {
+    "dashboard": 0.8601,
+    "scenarios_py": 0.8601
+   },
+   "interns_for_80": {
+    "dashboard": 5,
+    "scenarios_py": 5
+   },
+   "ceiling": {
+    "dashboard": 0.4937,
+    "scenarios_py": 0.4937
+   },
+   "bound_most_first": {
+    "dashboard": 0.564,
+    "scenarios_py": 0.564
+   },
+   "bound_one_per_call": {
+    "dashboard": 0.422,
+    "scenarios_py": 0.422
+   },
+   "max_gap_points": 0.0,
+   "match": true
+  },
+  {
+   "case": {
+    "no_call": 0.4,
+    "try1": 0.4,
+    "later_keep": 0.7
+   },
+   "inputs_read": {
+    "unique_requests": 500.0,
+    "reachable_people": 418.0,
+    "requests_per_successful_call": 1.1699,
+    "rates": [
+     0.4,
+     0.28,
+     0.196
+    ],
+    "tries": 211.0
+   },
+   "expected_today": {
+    "dashboard": 0.5975,
+    "scenarios_py": 0.5975
+   },
+   "best_case": {
+    "dashboard": 0.783,
+    "scenarios_py": 0.783
+   },
+   "interns_for_80": {
+    "dashboard": null,
+    "scenarios_py": null
+   },
+   "ceiling": {
+    "dashboard": 0.4937,
+    "scenarios_py": 0.4937
+   },
+   "bound_most_first": {
+    "dashboard": 0.564,
+    "scenarios_py": 0.564
+   },
+   "bound_one_per_call": {
+    "dashboard": 0.422,
+    "scenarios_py": 0.422
+   },
+   "max_gap_points": 0.0,
+   "match": true
+  },
+  {
+   "case": {
+    "no_call": 0.4,
+    "try1": 0.4,
+    "later_keep": 0.4
+   },
+   "inputs_read": {
+    "unique_requests": 500.0,
+    "reachable_people": 418.0,
+    "requests_per_successful_call": 1.1699,
+    "rates": [
+     0.4,
+     0.16,
+     0.064
+    ],
+    "tries": 211.0
+   },
+   "expected_today": {
+    "dashboard": 0.5975,
+    "scenarios_py": 0.5975
+   },
+   "best_case": {
+    "dashboard": 0.71,
+    "scenarios_py": 0.71
+   },
+   "interns_for_80": {
+    "dashboard": null,
+    "scenarios_py": null
+   },
+   "ceiling": {
+    "dashboard": 0.4937,
+    "scenarios_py": 0.4937
+   },
+   "bound_most_first": {
+    "dashboard": 0.564,
+    "scenarios_py": 0.564
+   },
+   "bound_one_per_call": {
+    "dashboard": 0.422,
+    "scenarios_py": 0.422
+   },
+   "max_gap_points": 0.0,
+   "match": true
+  },
+  {
+   "case": {
+    "no_call": 0.25,
+    "try1": 0.4,
+    "later_keep": 1.2
+   },
+   "inputs_read": {
+    "unique_requests": 500.0,
+    "reachable_people": 418.0,
+    "requests_per_successful_call": 1.1699,
+    "rates": [
+     0.4,
+     0.48,
+     0.576
+    ],
+    "tries": 211.0
+   },
+   "expected_today": {
+    "dashboard": 0.4475,
+    "scenarios_py": 0.4475
+   },
+   "best_case": {
+    "dashboard": 0.8865,
+    "scenarios_py": 0.8865
+   },
+   "interns_for_80": {
+    "dashboard": 6,
+    "scenarios_py": 6
+   },
+   "ceiling": {
+    "dashboard": 0.4937,
+    "scenarios_py": 0.4937
+   },
+   "bound_most_first": {
+    "dashboard": 0.564,
+    "scenarios_py": 0.564
+   },
+   "bound_one_per_call": {
+    "dashboard": 0.422,
+    "scenarios_py": 0.422
+   },
+   "max_gap_points": 0.0,
+   "match": true
+  }
+ ],
+ "notes": [
+  {
+   "what": "Plan table (scenarios.py, 211.1 tries) vs workbook (211 whole tries), planning case",
+   "plan": 0.4476,
+   "workbook": 0.4475,
+   "gap_points": 0.008
+  }
+ ],
+ "formula_errors": 0,
+ "ALL_MATCH": true
+}
